@@ -125,36 +125,50 @@ class Store_Scores_Public {
         register_post_type( 'ss_competition', $args ); 
     }
 
-    public function store_scores_competitor() {
-        add_meta_box( 
-            'product_price_box',
-            __( 'Product Price', 'myplugin_textdomain' ),
-            array($this, 'product_price_box_content'),
-            'ss_competition'
-        );
-    }
-
-    public function product_price_box_content( $post ) {
-        wp_nonce_field( plugin_basename( __FILE__ ), 'product_price_box_content_nonce' );
-        $pm = get_post_meta($post->ID);
-        if (array_key_exists('product_price',$pm)) {
-            $value = ' value="'.get_post_meta($post->ID)['product_price'][0].'"';
-        } else {
-            $value = '';
+    public function add_competitor_boxes() {
+        $max_players = get_option('store_scores_options')['max_players'];
+        for ($x = 0; $x < $max_players; $x++) {
+            add_meta_box( 
+                'competitor_box_' . $x,
+                __( 'Competitor ' . $x),
+                array($this, 'competitor_content'),
+                'ss_competition',
+                'advanced',
+                'default',
+                [$x]
+            );
         }
-        echo '<label for="product_price"></label>';
-        echo '<input type="text" id="product_price" name="product_price" placeholder="enter a price"' . $value . '/>';
     }
 
-    public function product_price_box_save( $post_id ) {
+    public function competitor_content( $post, $args ) {
+        $x = $args['args'][0];
+        $post_name = 'competitor_'.$x;
+        wp_nonce_field( plugin_basename( __FILE__ ), 'competitor_box_content_nonce' );
+        $pm = get_post_meta($post->ID);
+        if (array_key_exists('competitors',$pm)) {
+            $competitors = unserialize($pm['competitors'][0]);
+            $competitor = $competitors[$x];
+        } else {
+            $competitor = 0;
+        }
+        echo '<label for="' . $post_name . '"></label>';
+        echo '<select id="' . $post_name . '" name="' . $post_name . '" size="1">';
+        echo '<option selected value="0"></option>';
+        foreach (get_users('orderby=meta_value&meta_key=last_name') as $user) {
+            $selected = ($user->ID == $competitor) ? ' selected' : '';
+            $name = $user->get('last_name') . ', ' . $user->get('first_name') . esc_html(' <') . $user->get('user_email') . esc_html('>'); 
+            echo '<option' . $selected . ' value="' .$user->ID. '">'. $name . '</option>';
+        }
+        echo '</select>';
+    }
 
+    public function save_competitor( $post_id ) {
 
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) 
             return;
 
-        $key = 'product_price_box_content_nonce';
+        $key = 'competitor_box_content_nonce';
         if(! array_key_exists ($key, $_POST) )return;
-
         if ( !wp_verify_nonce( $_POST[$key], plugin_basename( __FILE__ ) ) )
             return;
 
@@ -165,7 +179,11 @@ class Store_Scores_Public {
             if ( !current_user_can( 'edit_post', $post_id ) )
                 return;
         }
-        $product_price = $_POST['product_price'];
-        update_post_meta( $post_id, 'product_price', $product_price );
+        $max_players = get_option('store_scores_options')['max_players'];
+        for ($x = 0; $x < $max_players; $x++) {
+            $competitors[] = $_POST['competitor_'.$x];
+        }
+
+        update_post_meta( $post_id, 'competitors', $competitors );
     }
 }
