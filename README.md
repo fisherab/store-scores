@@ -9,4 +9,8 @@ This is intended to provide functions to allow an admin to:
 
 1. Upload `store-scores.php` to the `/wp-content/plugins/` directory
 1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Place `<?php do_action('plugin_name_hook'); ?>` in your templates
+
+# Use
+1. Create a new competition with for example a title of "fred" and add the contestants (you choose from the current set of members)
+1. Create a post with the shortcode [store-score competition="fred"] where 
+1. Logged in visitors to that page can look up their competitor and enter the result
