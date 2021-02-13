@@ -48,10 +48,8 @@ class Store_Scores_Public {
      * @param      string    $version    The version of this plugin.
      */
     public function __construct( $plugin_name, $version ) {
-
         $this->plugin_name = $plugin_name;
         $this->version = $version;
-
     }
 
     /**
@@ -98,6 +96,38 @@ class Store_Scores_Public {
 
         wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/store-scores-public.js', array( 'jquery' ), $this->version, false );
 
+    }
+
+    public function register_short_codes() {
+        add_shortcode('store-score', [$this, 'store_score_function']);
+    }
+
+    public function store_score_function($atts, $content=null) {
+        write_log([$atts, $content]);
+        $me = wp_get_current_user();
+        if ($me->ID === 0) return 'Sorry you must be logged in to enter a result.';
+        if (array_key_exists('competition', $atts)) {
+            $competition = $atts['competition'];
+            global $wpdb;
+            $sql = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_type = 'ss_competition'", $competition);
+            $r = $wpdb->get_results($sql, OBJECT);
+            if (count($r) != 1) return 'Failed to find exactly one competition with a title of '.$competition;
+            $pid = $r[0]->ID;
+            $competitors = get_post_meta($pid, 'competitors', true);
+            write_log($competitors);
+            if (! in_array($me->ID, $competitors)) return 'Sorry you are not competing in this event';
+        } else {
+            return 'Competion not specified in call to short code.';
+        }
+        $html = '';
+        $html .= 'You are user'  . $me->ID;
+        $html .= '<form>';
+        $html .= '<label for="oppo">Identify your opponent:</label>';
+        $html .= '<select id="oppo">';
+        $html .= '</select>'; 
+        $html .= '<input type="submit">';
+        $html .= '</form>';
+        return $html;
     }
 
     public function store_scores_register_competition() {

@@ -27,7 +27,7 @@
 
 // If this file is called directly, abort.
 if ( ! defined( 'WPINC' ) ) {
-	die;
+    die;
 }
 
 function write_log($log) { // TODO delete when no longer needed or make it depend  on WP_DEBUG
@@ -42,7 +42,7 @@ function store_scores_generate_response($type, $message){
     if($type == "success") $response = "<div class='success'>{$message}</div>";
     else $response = "<div class='error'>{$message}</div>";
     return $response;
-  }
+}
 
 /**
  * Currently plugin version.
@@ -56,8 +56,8 @@ define( 'STORE_SCORES_VERSION', '1.0.0' );
  * This action is documented in includes/class-store-scores-activator.php
  */
 function activate_store_scores() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-store-scores-activator.php';
-	Store_Scores_Activator::activate();
+    require_once plugin_dir_path( __FILE__ ) . 'includes/class-store-scores-activator.php';
+    Store_Scores_Activator::activate();
 }
 
 /**
@@ -65,8 +65,8 @@ function activate_store_scores() {
  * This action is documented in includes/class-store-scores-deactivator.php
  */
 function deactivate_store_scores() {
-	require_once plugin_dir_path( __FILE__ ) . 'includes/class-store-scores-deactivator.php';
-	Store_Scores_Deactivator::deactivate();
+    require_once plugin_dir_path( __FILE__ ) . 'includes/class-store-scores-deactivator.php';
+    Store_Scores_Deactivator::deactivate();
 }
 
 register_activation_hook( __FILE__, 'activate_store_scores' );
@@ -88,9 +88,9 @@ require plugin_dir_path( __FILE__ ) . 'includes/class-store-scores.php';
  * @since    1.0.0
  */
 function run_store_scores() {
-    
-	$plugin = new Store_Scores();
-	$plugin->run();
+
+    $plugin = new Store_Scores();
+    $plugin->run();
 
 }
 run_store_scores();
