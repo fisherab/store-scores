@@ -1,11 +1,15 @@
 <?php
-
 /**
  * The public-facing functionality of the plugin.
  *
  * @package    Store_Scores
  * @subpackage Store_Scores/public
  *
+ */
+
+
+/**
+ * Class providing public-facing functionality of store-scores
  */
 class Store_Scores_Public {
 
@@ -18,7 +22,6 @@ class Store_Scores_Public {
     }
 
     public function enqueue_styles() {
-
         /**
          * This function is provided for demonstration purposes only.
          *
@@ -30,13 +33,11 @@ class Store_Scores_Public {
          * between the defined hooks and the functions defined in this
          * class.
          */
-
         wp_enqueue_style( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'css/store-scores-public.css', array(), $this->version, 'all' );
 
     }
 
     public function enqueue_scripts() {
-
         /**
          * This function is provided for demonstration purposes only.
          *
@@ -48,17 +49,29 @@ class Store_Scores_Public {
          * between the defined hooks and the functions defined in this
          * class.
          */
-
         wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/store-scores-public.js', array( 'jquery' ), $this->version, false );
 
     }
 
+    /**
+     * Add all shortcodes for the user to add to pages or posts
+     */
     public function register_short_codes() {
         add_shortcode('store-score', [$this, 'store_score_function']);
     }
 
     /**
-     * A competition has a series of posts
+     * A competition of type competition_ss is a post holding all the data about a competition.
+     *
+     * The competition has post meta data:
+     *  * competitors - an array of competitor ids registered for this competition
+     *  * results - an array indexed by the lower 
+     *  id of the two competitors and from his/her perspective. Within the array 
+     *  is another array indexed by the id of the higher player and holding an 
+     *  array of game results where a game result is an array of hoops for and hoops against.
+     *
+     * @param array $atts arguments with the short code
+     * @param string $content material between the opening and closing of the shortcode
      */
     public function store_score_function($atts, $content=null) {
         write_log([$atts, $content]);
@@ -74,6 +87,7 @@ class Store_Scores_Public {
             $competitors = get_post_meta($pid, 'competitors', true);
             write_log($competitors);
             if (! in_array($me->ID, $competitors)) return 'Sorry you are not competing in this event';
+            $opponents = array_diff($competitors,[$me->ID])
         } else {
             return 'Competion not specified in call to short code.';
         }
@@ -82,8 +96,11 @@ class Store_Scores_Public {
         $html .= '<form>';
         $html .= '<label for="oppo">Identify your opponent:</label>';
         $html .= '<select id="oppo">';
-        $html .= '<option value="saab">Saab</option>';
-        $html .= '<option value="volvo">Volvo</option>';
+        for ($opponents as $opponent) {
+            $user = get_user_by('ID', $opponent);
+            $name = $user->get('last_name') . ', ' . $user->get('first_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
+            $html .=  '<option' . "" . ' value="' .$user->ID. '">'. $name . '</option>';
+        }
         $html .= '</select>'; 
         $html .= '<input type="submit">';
         $html .= '</form>';
