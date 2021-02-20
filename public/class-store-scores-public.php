@@ -121,17 +121,17 @@ class Store_Scores_Public {
         $html .= '<select id="oppo">';
 
         foreach ($opponents as $opponent) {
-                write_log($opponent);
+            write_log($opponent);
 
-                $user = get_user_by('ID', $opponent);
-                write_log($user->get('last_name'));
-                $name = $user->get('last_name') . ', ' . $user->get('first_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
-                $html .=  '<option' . "" . ' value="' .$user->ID. '">'. $name . '</option>';
-            }
-                $html .= '</select>'; 
-            $html .= '<input type="submit">';
-            $html .= '</form>';
-            return $html;
+            $user = get_user_by('ID', $opponent);
+            write_log($user->get('last_name'));
+            $name = $user->get('last_name') . ', ' . $user->get('first_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
+            $html .=  '<option' . "" . ' value="' .$user->ID. '">'. $name . '</option>';
+        }
+        $html .= '</select>'; 
+        $html .= '<input type="submit">';
+        $html .= '</form>';
+        return $html;
     }
 
     /**
@@ -171,7 +171,7 @@ class Store_Scores_Public {
             'Competition Type',
             [$this,'competition_type_content'],
             'ss_competition', 'advanced', 'default');
-        
+
         $max_players = get_option('store_scores_options')['max_players'];
         for ($x = 0; $x < $max_players; $x++) {
             add_meta_box( 
@@ -185,12 +185,28 @@ class Store_Scores_Public {
             );
         }
     }
-    
+
     /** 
      * Invoked by add_competitition to display selector for competition type
      */
     public function competition_type_content ($post) {
-        wp_nonce_field( plugin_basename( __FILE__ ), 'competitor_box_content_nonce' );
+        wp_nonce_field( plugin_basename( __FILE__ ), 'competitor_type_nonce' );
+        $pm = get_post_meta($post->ID);
+        if (array_key_exists('type',$pm)) {
+            $type = $pm['type']);
+        } else {
+            $type = Null;
+        }
+        echo '<label for="' . $post_name . '"></label>';
+        echo '<select id="' . $post_name . '" name="' . $post_name . '" size="1">';
+        echo '<option selected value="0"></option>';
+        foreach (get_users('orderby=meta_value&meta_key=last_name') as $user) {
+            $selected = ($user->ID == $competitor) ? ' selected' : '';
+            $name = $user->get('last_name') . ', ' . $user->get('first_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
+            echo '<option' . $selected . ' value="' .$user->ID. '">'. $name . '</option>';
+        }
+        echo '</select>';
+
     }
 
     /**
