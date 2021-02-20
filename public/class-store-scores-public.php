@@ -165,7 +165,13 @@ class Store_Scores_Public {
     /**
      * This is hooked to add_meta_boxes to ss_competition posts
      */
-    public function add_competitor_boxes() {
+    public function add_competition_boxes() {
+        add_meta_box(
+            'competition_type',
+            'Competition Type',
+            [$this,'competition_type_content'],
+            'ss_competition', 'advanced', 'default');
+        
         $max_players = get_option('store_scores_options')['max_players'];
         for ($x = 0; $x < $max_players; $x++) {
             add_meta_box( 
@@ -179,9 +185,16 @@ class Store_Scores_Public {
             );
         }
     }
+    
+    /** 
+     * Invoked by add_competitition to display selector for competition type
+     */
+    public function competition_type_content ($post) {
+        wp_nonce_field( plugin_basename( __FILE__ ), 'competitor_box_content_nonce' );
+    }
 
     /**
-     * Invoked by add_competitor_boxes to display boxes to input competitor names for a specific ss_competition.
+     * Invoked by add_competition_boxes to display boxes to input competitor names for a specific ss_competition.
      */
     public function competitor_content( $post, $args ) {
         $x = $args['args'][0];
