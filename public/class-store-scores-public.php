@@ -7,6 +7,27 @@
  *
  */
 
+/** 
+ * Class holding a single match result
+ */
+class Store_Scores_Result {
+    private $submitter;
+    private $opponent;
+    private $games;
+    private $date;
+
+    public function __construct($submitter, $opponent, $date, $games) {
+        $this->submitter = $submitter;
+        $this->opponent = $opponent;
+        $this->games = $games;
+        $this->date = $date;
+    }
+
+    public function get_submitter() {
+        return $submitter;
+    }
+
+}
 
 /**
  * Class providing public-facing functionality of store-scores
@@ -19,6 +40,7 @@ class Store_Scores_Public {
     public function __construct( $plugin_name, $version ) {
         $this->plugin_name = $plugin_name;
         $this->version = $version;
+        $this->register_short_codes();
     }
 
     public function enqueue_styles() {
@@ -56,7 +78,7 @@ class Store_Scores_Public {
     /**
      * Add all shortcodes for the user to add to pages or posts
      */
-    public function register_short_codes() {
+    private function register_short_codes() {
         add_shortcode('store-score', [$this, 'store_score_function']);
     }
 
@@ -65,10 +87,7 @@ class Store_Scores_Public {
      *
      * The competition has post meta data:
      *  * competitors - an array of competitor ids registered for this competition
-     *  * results - an array indexed by the lower 
-     *  id of the two competitors and from his/her perspective. Within the array 
-     *  is another array indexed by the id of the higher player and holding an 
-     *  array of game results where a game result is an array of hoops for and hoops against.
+     *  * results - an array of game result objects.
      *
      * @param array $atts arguments with the short code
      * @param string $content material between the opening and closing of the shortcode
@@ -85,28 +104,39 @@ class Store_Scores_Public {
             if (count($r) != 1) return 'Failed to find exactly one competition with a title of '.$competition;
             $pid = $r[0]->ID;
             $competitors = get_post_meta($pid, 'competitors', true);
-            write_log($competitors);
             if (! in_array($me->ID, $competitors)) return 'Sorry you are not competing in this event';
-            $opponents = array_diff($competitors,[$me->ID])
+            $opponents = array_diff($competitors,[$me->ID]);
         } else {
             return 'Competion not specified in call to short code.';
         }
+        $ev_type = new Store_Scores_Block_Type();
+        write_log($ev_type);
+        $opponents = $ev_type->get_opponents($pid,$me->ID);
+        write_log($opponents);
+
         $html = '';
         $html .= 'You are user '  . $me->ID;
         $html .= '<form>';
         $html .= '<label for="oppo">Identify your opponent:</label>';
         $html .= '<select id="oppo">';
-        for ($opponents as $opponent) {
-            $user = get_user_by('ID', $opponent);
-            $name = $user->get('last_name') . ', ' . $user->get('first_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
-            $html .=  '<option' . "" . ' value="' .$user->ID. '">'. $name . '</option>';
-        }
-        $html .= '</select>'; 
-        $html .= '<input type="submit">';
-        $html .= '</form>';
-        return $html;
+
+        foreach ($opponents as $opponent) {
+                write_log($opponent);
+
+                $user = get_user_by('ID', $opponent);
+                write_log($user->get('last_name'));
+                $name = $user->get('last_name') . ', ' . $user->get('first_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
+                $html .=  '<option' . "" . ' value="' .$user->ID. '">'. $name . '</option>';
+            }
+                $html .= '</select>'; 
+            $html .= '<input type="submit">';
+            $html .= '</form>';
+            return $html;
     }
 
+    /**
+     * This is hooked to 'init' to create the ss_competition post type
+     */
     public function store_scores_register_competition() {
         $labels = array(
             'name'               => __( 'Competitions' ),
@@ -132,6 +162,9 @@ class Store_Scores_Public {
         register_post_type( 'ss_competition', $args ); 
     }
 
+    /**
+     * This is hooked to add_meta_boxes to ss_competition posts
+     */
     public function add_competitor_boxes() {
         $max_players = get_option('store_scores_options')['max_players'];
         for ($x = 0; $x < $max_players; $x++) {
@@ -147,6 +180,9 @@ class Store_Scores_Public {
         }
     }
 
+    /**
+     * Invoked by add_competitor_boxes to display boxes to input competitor names for a specific ss_competition.
+     */
     public function competitor_content( $post, $args ) {
         $x = $args['args'][0];
         $post_name = 'competitor_'.$x;
