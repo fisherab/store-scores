@@ -30,6 +30,7 @@ class Store_Scores {
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-store-scores-i18n.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'includes/class-store-scores-competition-type.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-store-scores-admin.php';
+        require_once plugin_dir_path( dirname( __FILE__ ) ) . 'admin/class-store-scores-competition.php';
         require_once plugin_dir_path( dirname( __FILE__ ) ) . 'public/class-store-scores-public.php';
         $this->loader = new Store_Scores_Loader();
     }
@@ -45,15 +46,15 @@ class Store_Scores {
         $this->loader->add_action( 'admin_enqueue_scripts', $plugin_admin, 'enqueue_scripts' );
         $this->loader->add_action( 'admin_menu', $plugin_admin, 'store_scores_options' );
         $this->loader->add_action( 'admin_init', $plugin_admin, 'store_scores_register_settings' );
+        $this->loader->add_action( 'init', $plugin_admin, 'register_competition' );
+        $this->loader->add_action( 'add_meta_boxes', $plugin_admin, 'add_competition_boxes' );
+        $this->loader->add_action( 'save_post',  $plugin_admin, 'save_competition' );
     }
 
     private function define_public_hooks() {
         $plugin_public = new Store_Scores_Public( $this->get_plugin_name(), $this->get_version() );
         $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_styles' );
         $this->loader->add_action( 'wp_enqueue_scripts', $plugin_public, 'enqueue_scripts' );
-        $this->loader->add_action( 'init', $plugin_public, 'store_scores_register_competition' );
-        $this->loader->add_action( 'add_meta_boxes', $plugin_public, 'add_competition_boxes' );
-        $this->loader->add_action('save_post',  $plugin_public, 'save_competitor' );
     }
 
     public function run() {

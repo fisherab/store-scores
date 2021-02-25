@@ -3,18 +3,20 @@
 /**
  * The admin-specific functionality of the plugin.
  *
- * @package    Store_Scores
- * @subpackage Store_Scores/admin
+ * @package    store_scores
+ * @subpackage store_scores/admin
  *
  */
 class Store_Scores_Admin {
 
     private $plugin_name;
     private $version;
+    private $competition;
 
     public function __construct( $plugin_name, $version ) {
         $this->plugin_name = $plugin_name;
         $this->version = $version;
+        $this->competition = new Store_Scores_Competition();
     }
 
     public function enqueue_styles() {
@@ -55,6 +57,18 @@ class Store_Scores_Admin {
          */
         wp_enqueue_script( $this->plugin_name, plugin_dir_url( __FILE__ ) . 'js/store-scores-admin.js', array( 'jquery' ), $this->version, false );
 
+    }
+
+    public function register_competition () {
+        $this->competition->register_competition();
+    }
+
+    public function add_competition_boxes() {
+        $this->competition->add_competition_boxes();
+    }
+
+    public function save_competition($post_id) {
+          $this->competition->save_competition($post_id);
     }
 
     public function store_scores_options() {
