@@ -12,5 +12,5 @@ This is intended to provide functions to allow an admin to:
 
 # Use
 1. Create a new competition with for example a title of "fred" and add the contestants (you choose from the current set of members)
-1. Create a post with the shortcode [store-score competition="fred"] where 
+1. Create a post with the shortcode [ss-enter-score competition="fred"] where 
 1. Logged in visitors to that page can look up their competitor and enter the result
