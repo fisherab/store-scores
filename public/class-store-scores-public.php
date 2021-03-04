@@ -89,8 +89,9 @@ class Store_Scores_Public {
      * Add all shortcodes for the user to add to pages or posts
      */
     private function register_short_codes() {
-        add_shortcode('ss-store-score', [$this, 'store_score_function']);
         add_shortcode('ss-get-description', [$this, 'get_description']);
+        add_shortcode('ss-enter-score', [$this, 'enter_score']);
+        add_shortcode('ss-show-results', [$this, 'show_results']);
     }
 
     /**
@@ -121,7 +122,7 @@ class Store_Scores_Public {
      * @param array $atts arguments with the short code
      * @param string $content material between the opening and closing of the shortcode
      */
-    public function store_score_function($atts, $content=null) {
+    public function enter_score($atts, $content=null) {
         $me = wp_get_current_user();
         if ($me->ID === 0) return 'Sorry you must be logged in to enter a result.';
         if (array_key_exists('competition', $atts)) {
@@ -250,7 +251,7 @@ class Store_Scores_Public {
             $url = add_query_arg('fail', $fail, $url);
         } else {
             $url = add_query_arg('success', 1, $url);
-            $result['date'] = $_POST[dateofmatch];
+            $result['date'] = $_POST['dateofmatch'];
             $result['wins'] = $wins;
             $result['you'] = ['person' => $_POST['you_id'], 'scores' => $you];
             $result['opp'] = ['person' => $_POST['opp_id'], 'scores' =>$opp];
@@ -266,4 +267,26 @@ class Store_Scores_Public {
         wp_safe_redirect( $url );
         exit();
     }
+
+    /**
+     *  Return formatted display of results
+     */
+    public function show_results($atts) {
+        if (! array_key_exists('competition', $atts)) {
+            return 'Competion not specified in call to short code.';
+        }
+        $competition = $atts['competition'];
+        global $wpdb;
+        $sql = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_type = 'ss_competition'", $competition);
+        $r = $wpdb->get_results($sql, OBJECT);
+        if (count($r) != 1) {
+            return 'Failed to find exactly one competition with a title of '.$competition;
+        }
+        $pid = $r[0]->ID;
+        $type = get_post_meta($pid, 'type', true);
+        return $this->types[$type]->get_results($pid);
+    } 
+
 }
+
+

@@ -37,5 +37,14 @@ The best record will be determined by the following criteria, in this order:
             Who reported the result of their last game first
 ";
     }
+    
+    /**
+     *  Return formatted results
+     *
+     *  $comp_id id of the competition custom post
+     */
+    public function get_results($comp_id) {
+        return "<p>Results will appear here</p>";
+    }
 
 }

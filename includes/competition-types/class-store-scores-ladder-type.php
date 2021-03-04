@@ -34,4 +34,45 @@ class Store_Scores_Ladder_Type extends Store_Scores_Competition_Type {
         $html .= "</div>";
         return $html;
     }
+
+    /**
+     *  Return formatted results
+     *
+     *  $comp_id id of the competition custom post
+     */
+    public function get_results($comp_id) {
+        $needed = (intval(get_post_meta($comp_id, 'bestof', true))+1)/2; 
+        $rankings = [];
+        $results = get_post_meta($comp_id)['result'];
+        foreach ($results as $n => $result) { 
+            $result = unserialize($result);
+            $you = $result['you'];
+            $you_id = $you['person'];
+            $opp = $result['opp'];
+            $opp_id = $opp['person'];
+            if (! isset($rankings[$you_id])) {
+                $rankings[$you_id] = 100;
+            }
+            if (! isset($rankings[$opp_id])) {
+                $rankings[$opp_id] = 100;
+            }
+            if (intval($result['wins']) >= $needed) {
+                $rankings[$you_id]++;
+                $rankings[$opp_id]--;
+            } else {
+                $rankings[$you_id]--;
+                $rankings[$opp_id]++;
+            } 
+        }
+        arsort($rankings, SORT_NUMERIC);
+        $html = "<div><table>";
+        foreach ($rankings as $person_id => $ranking) {
+            $person = get_user_by("ID", $person_id);
+            $person_name = $person->get('first_name') . ' ' . $person->get('last_name');
+            $html .= '<tr><td>' . $person_name . '<td><td>' . $ranking . '</td></tr>';
+        }
+        $html .= '</table></div>';
+        return $html;
+    }
+
 }
