@@ -141,7 +141,7 @@ class Store_Scores_Public {
 
         $html = '';
         $html .= '<form action="." method="POST">';
-        $html .= wp_nonce_field('submit_score', 'annie the aardvark');
+        $html .= wp_nonce_field('submit_score', 'annie the aardvark', true, false);
         $html .= '<input type="hidden" name="comp_id" value="' .$pid . '">';
         $html .= '<input type="hidden" name="you_id" value="' .$me->ID . '">';
 

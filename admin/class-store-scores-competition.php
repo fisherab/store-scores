@@ -147,6 +147,10 @@ class Store_Scores_Competition {
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) 
             return;
 
+        if ( ! isset ($_POST['post_type']) || 'ss_competition' != $_POST['post_type'] ) {
+            return;
+        }
+            
         if ( 'post' == $_POST['post_type'] ) {
             if ( !current_user_can( 'edit_page', $post_id ) )
                 return;
