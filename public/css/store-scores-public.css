@@ -2,3 +2,7 @@
  * All of the CSS for your public-facing functionality should be
  * included in this file.
  */
+input.croquet {
+    width: auto !important;
+    display: inline !important
+}

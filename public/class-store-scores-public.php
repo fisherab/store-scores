@@ -50,6 +50,7 @@ class Store_Scores_Public {
         }
 
         $this->register_short_codes();
+        add_action('template_redirect', [$this,'process_submit_score']);
     }
 
     public function enqueue_styles() {
@@ -137,29 +138,132 @@ class Store_Scores_Public {
             return 'Competion not specified in call to short code.';
         }
         $opponents = $this->types[$type]->get_opponents($pid,$me->ID);
-        write_log(["Opps", $opponents]);
 
         $html = '';
-        $html .= '<form>';
-        $html .= '<label for="oppo">Identify your opponent:</label>';
-        $html .= '<select id="oppo">';
+        $html .= '<form action="." method="POST">';
+        $html .= wp_nonce_field('submit_score', 'annie the aardvark');
+        $html .= '<input type="hidden" name="comp_id" value="' .$pid . '">';
+        $html .= '<input type="hidden" name="you_id" value="' .$me->ID . '">';
+
+        $html .= '<label for="dateofmatch">The date of the match</label>';
+        $html .= '<input type="date" id="dateofmatch" name="dateofmatch" value="' . date("Y-m-d") .'">';
+
+        $html .= '<label for="opp"><br/>Identify your opponent:</label>';
+        $html .= '<select id="opp" name="opp_id">';
 
         foreach ($opponents as $opponent) {
-            write_log($opponent);
-
             $user = get_user_by('ID', $opponent);
-            write_log($user->get('last_name'));
             $name = $user->get('last_name') . ', ' . $user->get('first_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
             $html .=  '<option' . "" . ' value="' .$user->ID. '">'. $name . '</option>';
         }
         $html .= '</select>';
+        $html .= '<div>';
+        if ($bestof == 1) {
+            $html .= '<label for="you1"><br/>Please enter results of the match with your result first</label>';
+        } else {
+            $html .= '<label for="you1"><br/>Please enter the results in pairs for each game of the match. For each game your results should appear first</label>';
+        }
         for ($i = 1; $i <= $bestof; $i++) {
-            $html .= '<div><input type="number" min="0" max="26" size="2" name="you' . $i. '" label="you' . $i. '" >-<input type="number" min="0" max="26" size="2" name="opp' . $i. '" label="opp' . $i. '" ></div>';
-            
+            if ($i != 1) $html .= ', ';
+            $html .= '<input class="croquet" type="number" min="0" max="26" size="2" name="you' . $i. '" id="you' . $i. '" >-<input class="croquet" type="number" min="0" max="26" size="2" name="opp' . $i. '" id="opp' . $i. '" >';
+
+
         }  
-        $html .= '<input type="submit">';
+        $html .= '</div>';
+        $html .= '<input type="submit" name="send-scores" id="submit" class="submit"/>';
         $html .= '</form>';
+
+        if ( isset( $_GET['fail'] ) ) {
+            $fail = sanitize_title( $_GET['fail'] );
+
+            switch ( $fail ) {
+            case 'nodraws' :
+                $message = 'Draws are not permitted.';
+                break;
+
+            case 'extra' :
+                $message = 'You have tried to record a superfluous game.';
+                break;
+
+            default :
+                $message = 'Something went wrong.';
+                break;
+            }
+
+            $html .= '<div class="fail"><p>' . esc_html( $message ) . '</p></div>';
+        }
+
+        if ( isset( $_GET['success'] ) ) {
+            $html .= '<div class="success"><p>' . "Results succesfully uploaded" . '</p></div>';
+        }
+
         return $html;
     }
 
+    public function process_submit_score() {
+        if ( ! isset( $_POST['send-scores'] ) || ! isset( $_POST['annie_the_aardvark'] ) )  {
+            return;
+        }
+        if ( ! wp_verify_nonce( $_POST['annie_the_aardvark'], 'submit_score' ) ) {
+            return;
+        }
+        $fail = '';
+        $comp_id = $_POST['comp_id'];
+        $bestof = get_post_meta($comp_id, 'bestof', true); 
+
+        $wins = 0;
+        for ($i = 1; $i <= $bestof; $i++) {
+            $you[$i] = $_POST['you' . $i];
+            $opp[$i] = $_POST['opp' . $i];
+            if ($you[$i] > $opp[$i]) {
+                $wins++;
+            }
+        }
+        if ($bestof == 1) {
+            if ($you[1] == $opp[1]) {
+                $fail = 'nodraws';
+            }
+        } elseif ($bestof == 3) {
+            if ($you[1] == $opp[1]) {
+                $fail = 'nodraws';
+            }
+            if (! $fail) {
+                if ($you[2] == $opp[2]) {
+                    $fail ='nodraws';
+                }
+                if (! $fail) {
+                    $need3 = ($you[1] > $opp[1]) && ($you[2] < $opp[2]);
+                    if (!$need3) {
+                        if (($you[3] != 0) || ($opp[3] != 0)) {
+                            $fail = 'extra';
+                        } 
+                    } else {
+                        if ($you[3] == $opp[3]) {
+                            $fail ='nodraws';
+                        }
+                    }
+                }
+            }
+        }
+        $url = remove_query_arg(["fail","success"]);
+        if ($fail) {
+            $url = add_query_arg('fail', $fail, $url);
+        } else {
+            $url = add_query_arg('success', 1, $url);
+            $result['date'] = $_POST[dateofmatch];
+            $result['wins'] = $wins;
+            $result['you'] = ['person' => $_POST['you_id'], 'scores' => $you];
+            $result['opp'] = ['person' => $_POST['opp_id'], 'scores' =>$opp];
+            $email = get_user_by('ID', $_POST['opp_id'])->get('user_email');
+            $you_user = get_user_by('ID', $_POST['you_id']);
+
+            $name = $you_user->get('first_name') . ' ' . $you_user->get('last_name');
+            $subject = "Result recorded by " . $name;
+            $msg = var_export($result, true);
+            wp_mail($email, $subject, $msg);
+            add_post_meta($comp_id, 'result', $result);
+        }
+        wp_safe_redirect( $url );
+        exit();
+    }
 }

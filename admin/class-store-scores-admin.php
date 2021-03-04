@@ -101,7 +101,6 @@ class Store_Scores_Admin {
     }
 
     public function validate_all_options ($input) {
-        write_log(['Validate ', $input]);
         $newinput['min_players'] = intval($input['min_players']);
         if ($newinput['min_players'] <= 0) {
             $newinput['min_players'] = 2;

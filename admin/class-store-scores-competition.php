@@ -106,9 +106,7 @@ class Store_Scores_Competition {
      * Invoked by add_competitition to display selector for best of
      */
     public function competition_bestof_content ($post) {
-        write_log(get_post_meta($post->ID));
         $bo = get_post_meta($post->ID,'bestof',true);
-        write_log($bo);
         if (! $bo) $bo = 1;
         echo '<label for="bestof"></label>';
         echo '<select id="bestof" name="bestof" size="1">';
@@ -156,7 +154,6 @@ class Store_Scores_Competition {
             if ( !current_user_can( 'edit_post', $post_id ) )
                 return;
         }
-write_log($_POST['bestof']);
         $max_players = get_option('store_scores_options')['max_players'];
         for ($x = 0; $x < $max_players; $x++) {
             $competitors[] = $_POST['competitor_'.$x];

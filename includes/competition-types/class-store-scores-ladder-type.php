@@ -12,10 +12,8 @@ class Store_Scores_Ladder_Type extends Store_Scores_Competition_Type {
      * @param integer $player_id id of the player 
      */
     public function get_opponents($comp_id, $player_id) {
-        write_log(["Wibble", $comp_id, $player_id]);
         $competitors = get_post_meta($comp_id,'competitors', true);
         $opponents = array_diff($competitors,[$player_id, 0]);
-        write_log($opponents);
         return $opponents;
     }
 
