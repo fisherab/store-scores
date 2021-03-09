@@ -216,6 +216,12 @@ class Store_Scores_Public {
         for ($i = 1; $i <= $bestof; $i++) {
             $you[$i] = $_POST['you' . $i];
             $opp[$i] = $_POST['opp' . $i];
+            if (empty($you[$i])) {
+                $you[$i] = 0;
+            } if (empty($opp[$i])) {
+                $opp[$i] = 0;
+            }
+
             if ($you[$i] > $opp[$i]) {
                 $wins++;
             }
