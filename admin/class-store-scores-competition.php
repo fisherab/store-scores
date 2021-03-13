@@ -55,20 +55,49 @@ class Store_Scores_Competition {
      * This is hooked to add_meta_boxes to ss_competition posts
      */
     public function add_competition_boxes() {
+        global $post;
+
         add_meta_box(
             'competition_type',
             'Competition Type',
             [$this,'competition_type_content'],
             'ss_competition', 'advanced', 'default');
 
-         add_meta_box(
+        add_meta_box(
             'competition_bestof',
             'Best of',
             [$this,'competition_bestof_content'],
             'ss_competition', 'advanced', 'default');
 
-        $max_players = get_option('store_scores_options')['max_players'];
-        for ($x = 0; $x < $max_players; $x++) {
+        $managers = get_post_meta($post->ID,'managers',true);
+        if ($managers) {
+            $count = count($managers);
+        } else {
+            $count = 0;
+        }
+
+        $max_managers = get_option('store_scores_options')['managers_increment'] + $count;
+        for ($x = 0; $x < $max_managers; $x++) {
+            add_meta_box( 
+                'manager_box_' . $x,
+                __( 'Manager ' . $x),
+                array($this, 'manager_content'),
+                'ss_competition',
+                'advanced',
+                'default',
+                [$x]
+            );
+        }
+
+        $competitors = get_post_meta($post->ID,'competitors',true);
+        if ($competitors) {
+            $count = count($competitors);
+        } else {
+            $count = 0;
+        }
+
+        $max_competitors = get_option('store_scores_options')['competitors_increment'] + $count;
+        for ($x = 0; $x < $max_competitors; $x++) {
             add_meta_box( 
                 'competitor_box_' . $x,
                 __( 'Competitor ' . $x),
@@ -80,7 +109,7 @@ class Store_Scores_Competition {
             );
         }
 
-   }
+    }
 
     /** 
      * Invoked by add_competitition to display selector for competition type
@@ -118,16 +147,14 @@ class Store_Scores_Competition {
         echo '</select>';
     }
 
-
     /**
      * Invoked by add_competition_boxes to display boxes to input competitor names for a specific ss_competition.
      */
     public function competitor_content( $post, $args ) {
         $x = $args['args'][0];
         $post_name = 'competitor_'.$x;
-        $pm = get_post_meta($post->ID);
-        if (array_key_exists('competitors',$pm)) {
-            $competitors = unserialize($pm['competitors'][0]);
+        $competitors = get_post_meta($post->ID,'competitors',true);
+        if ($competitors && array_key_exists($x, $competitors)) {
             $competitor = $competitors[$x];
         } else {
             $competitor = 0;
@@ -137,20 +164,43 @@ class Store_Scores_Competition {
         echo '<option selected value="0"></option>';
         foreach (get_users('orderby=meta_value&meta_key=last_name') as $user) {
             $selected = ($user->ID == $competitor) ? ' selected' : '';
-            $name = $user->get('last_name') . ', ' . $user->get('first_name') . esc_html(' <') . $user->get('user_email') . esc_html('>'); 
+            $name = $user->get('first_name') . ' ' . $user->get('last_name') . esc_html(' <') . $user->get('user_email') . esc_html('>'); 
             echo '<option' . $selected . ' value="' .$user->ID. '">'. $name . '</option>';
         }
         echo '</select>';
     }
 
-    public function save_competition( $post_id ) {
+    /**
+     * Invoked by add_competition_boxes to display boxes to input manager names for a specific ss_competition.
+     */
+    public function manager_content( $post, $args ) {
+        $x = $args['args'][0];
+        $post_name = 'manager_'.$x;
+        $managers = get_post_meta($post->ID,'managers',true);
+        if ($managers && array_key_exists($x, $managers)) {
+            $manager = $managers[$x];
+        } else {
+            $manager = 0;
+        }
+        echo '<label for="' . $post_name . '"></label>';
+        echo '<select id="' . $post_name . '" name="' . $post_name . '" size="1">';
+        echo '<option selected value="0"></option>';
+        foreach (get_users('orderby=meta_value&meta_key=last_name') as $user) {
+            $selected = ($user->ID == $manager) ? ' selected' : '';
+            $name = $user->get('first_name') . ' ' . $user->get('last_name') . esc_html(' <') . $user->get('user_email') . esc_html('>'); 
+            echo '<option' . $selected . ' value="' .$user->ID. '">'. $name . '</option>';
+        }
+        echo '</select>';
+    }
+
+ public function save_competition( $post_id ) {
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) 
             return;
 
         if ( ! isset ($_POST['post_type']) || 'ss_competition' != $_POST['post_type'] ) {
             return;
         }
-            
+
         if ( 'post' == $_POST['post_type'] ) {
             if ( !current_user_can( 'edit_page', $post_id ) )
                 return;
@@ -158,14 +208,21 @@ class Store_Scores_Competition {
             if ( !current_user_can( 'edit_post', $post_id ) )
                 return;
         }
-        $max_players = get_option('store_scores_options')['max_players'];
-        for ($x = 0; $x < $max_players; $x++) {
-            $competitors[] = $_POST['competitor_'.$x];
+        for ($x = 0; ; $x++) {
+            $key = 'competitor_'.$x;
+            if (! array_key_exists($key, $_POST)) break;
+            $competitors[] = $_POST[$key];
+        }
+        for ($x = 0; ; $x++) {
+            $key = 'manager_'.$x;
+            if (! array_key_exists($key, $_POST)) break;
+            $managers[] = $_POST[$key];
         }
 
         update_post_meta( $post_id, 'type', $_POST['type']);
-        update_post_meta( $post_id, 'competitors', $competitors );
         update_post_meta( $post_id, 'bestof', $_POST['bestof']);
+        update_post_meta( $post_id, 'competitors', array_values(array_diff(array_unique($competitors),[0])));
+        update_post_meta( $post_id, 'managers', array_values(array_diff(array_unique($managers),[0])));
     }
 
 }

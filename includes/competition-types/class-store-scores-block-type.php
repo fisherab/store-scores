@@ -10,18 +10,21 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
      */
     public function get_opponents($comp_id, $player_id) {
         $competitors = get_post_meta($comp_id,'competitors', true);
-        $results = get_post_meta($comp_id)['result'];
         $avoid = [$player_id, 0];
-        foreach ($results as $n => $result) {
-            $result = unserialize($result);
-            $you = $result['you'];
-            $you_id = $you['person'];
-            $opp = $result['opp'];
-            $opp_id = $opp['person'];
-            if ($player_id == $you_id) {
-                $avoid[] = $opp_id;
-            } elseif ($player_id == $opp_id) {
-                $avoid[] = $you_id;
+        $competition = get_post_meta($comp_id);
+        if (array_key_exists('result', $competition)) {
+            $results = $competition['result'];
+            foreach ($results as $n => $result) {
+                $result = unserialize($result);
+                $you = $result['you'];
+                $you_id = $you['person'];
+                $opp = $result['opp'];
+                $opp_id = $opp['person'];
+                if ($player_id == $you_id) {
+                    $avoid[] = $opp_id;
+                } elseif ($player_id == $opp_id) {
+                    $avoid[] = $you_id;
+                }
             }
         }
         $opponents = array_diff($competitors,$avoid);
@@ -60,7 +63,12 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
      *  $comp_id id of the competition custom post
      */
     public function get_results($comp_id) {
-        $results = get_post_meta($comp_id)['result'];
+        $competition = get_post_meta($comp_id);
+        if (array_key_exists('result', $competition)) {
+            $results = $competition['result'];
+        } else {
+            return "No matches completed yet";
+        }
         foreach ($results as $n => $result) {
             $result = unserialize($result);
             $you_id = $result['you']['person'];

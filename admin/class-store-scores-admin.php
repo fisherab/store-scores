@@ -68,7 +68,7 @@ class Store_Scores_Admin {
     }
 
     public function save_competition($post_id) {
-          $this->competition->save_competition($post_id);
+        $this->competition->save_competition($post_id);
     }
 
     public function store_scores_options() {
@@ -78,39 +78,36 @@ class Store_Scores_Admin {
     public function store_scores_register_settings() {
         register_setting( 'store_scores_options', 'store_scores_options', array('type'=> 'array', 'sanitize_callback' => [$this, 'validate_all_options'])) ;
         add_settings_section( 'misc_settings', 'Misc Settings', [$this, 'render_section'], 'store-scores-options-identifier' );
-        add_settings_field( 'stores_scores_options_min_players', 'Minimum players in a competition', [$this, 'render_min_players'], 'store-scores-options-identifier', 'misc_settings' );
-        add_settings_field( 'stores_scores_options_max_players', 'Maximum players in a competition', [$this, 'render_max_players'], 'store-scores-options-identifier', 'misc_settings' );
+        add_settings_field( 'stores_scores_options_competitors_increment', 'How many empty slots for new competitors', [$this, 'render_competitors_increment'], 'store-scores-options-identifier', 'misc_settings' );
+        add_settings_field( 'stores_scores_options_managers_increment', 'How many empty slots for managers', [$this, 'render_managers_increment'], 'store-scores-options-identifier', 'misc_settings' );
     }
 
     public function render_section() {
         // Nothing useful to say here
     }
 
-    public function render_max_players() {
+    public function render_competitors_increment() {
         $options = get_option( 'store_scores_options' );
         $value = '';
-        if (array_key_exists('max_players', $options)) $value=' value="' . $options['max_players'] . '"';
-        echo '<input id="store_scores_options_max_players" name="store_scores_options[max_players]" type="text"' . $value . '/>';
-    } 
-
-    public function render_min_players() {
-        $options = get_option( 'store_scores_options' );
-        $value = '';
-        if (array_key_exists('min_players', $options)) $value=' value="' . $options['min_players'] . '"';
-        echo '<input id="store_scores_options_max_players" name="store_scores_options[min_players]" type="text"' . $value . '/>';
+        if (array_key_exists('competitors_increment', $options)) $value=' value="' . $options['competitors_increment'] . '"';
+        echo '<input id="store_scores_options_competitors_increment" name="store_scores_options[competitors_increment]" type="text"' . $value . '/>';
     }
 
+    public function render_managers_increment() {
+        $options = get_option( 'store_scores_options' );
+        $value = '';
+        if (array_key_exists('managers_increment', $options)) $value=' value="' . $options['managers_increment'] . '"';
+        echo '<input id="store_scores_options_managers_increment" name="store_scores_options[managers_increment]" type="text"' . $value . '/>';
+    } 
+
     public function validate_all_options ($input) {
-        $newinput['min_players'] = intval($input['min_players']);
-        if ($newinput['min_players'] <= 0) {
-            $newinput['min_players'] = 2;
+        $newinput['competitors_increment'] = intval($input['competitors_increment']);
+        if ($newinput['competitors_increment'] <= 0) {
+            $newinput['competitors_increment'] = 1;
         }
-        $newinput['max_players'] = intval($input['max_players']);
-        if ($newinput['max_players'] <= 0 ) {
-            $newinput['max_players'] = 100;
-        }
-        if ($newinput['max_players'] < $newinput['min_players']) {
-            $newinput['max_players'] = $newinput['min_players'];
+        $newinput['managers_increment'] = intval($input['managers_increment']);
+        if ($newinput['managers_increment'] <= 0 ) {
+            $newinput['managers_increment'] = 1;
         }
         return $newinput;
     }

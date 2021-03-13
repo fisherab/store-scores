@@ -123,8 +123,6 @@ class Store_Scores_Public {
      * @param string $content material between the opening and closing of the shortcode
      */
     public function enter_score($atts, $content=null) {
-        $tman = current_user_can("delete_others_pages");
-        // $tman = false;
         $me = wp_get_current_user();
         if ($me->ID === 0) return 'Sorry you must be logged in to enter a result.';
         $submitter_id = $me->ID;
@@ -138,6 +136,12 @@ class Store_Scores_Public {
             $type = get_post_meta($comp_id, 'type', true);
             $bestof = get_post_meta($comp_id, 'bestof', true);   
             $competitors = get_post_meta($comp_id, 'competitors', true);
+            $managers = get_post_meta($comp_id, 'managers', true);
+            if ($managers) {
+                $tman = in_array($me->ID, $managers);
+            } else {
+                $tman = false;
+            }
             if (! in_array($me->ID, $competitors) && ! $tman) return 'Sorry you are not competing in this event';
         } else {
             return 'Competion not specified in call to short code.';

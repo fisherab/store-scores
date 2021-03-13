@@ -37,11 +37,10 @@ abstract class Store_Scores_Competition_Type {
                 if (isset($scores[$competitor_id2])) {
                     $match = $scores[$competitor_id2];
                     $n = count($match[0]);
+                    $score = "";
                     for ($j = 1; $j <= $n; $j++){
-                        if ($j != 1) {
-                            $score = ', ';
-                        } else {
-                            $score = '';
+                        if (strlen($score) != 0) {
+                            $score .= ', ';
                         }
                         $score .= strval($match[0][$j]) . '-' . strval($match[1][$j]);
                     }
