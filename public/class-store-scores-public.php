@@ -104,8 +104,8 @@ class Store_Scores_Public {
             $sql = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_type = 'ss_competition'", $competition);
             $r = $wpdb->get_results($sql, OBJECT);
             if (count($r) != 1) return 'Failed to find exactly one competition with a title of '.$competition;
-            $pid = $r[0]->ID;
-            $type = get_post_meta($pid, 'type', true);
+            $comp_id = $r[0]->ID;
+            $type = get_post_meta($comp_id, 'type', true);
             return $this->types[$type]->get_description();
         } else {
             return 'Competion not specified in call to short code.';
@@ -123,46 +123,64 @@ class Store_Scores_Public {
      * @param string $content material between the opening and closing of the shortcode
      */
     public function enter_score($atts, $content=null) {
+        $tman = current_user_can("delete_others_pages");
+        // $tman = false;
         $me = wp_get_current_user();
         if ($me->ID === 0) return 'Sorry you must be logged in to enter a result.';
+        $submitter_id = $me->ID;
         if (array_key_exists('competition', $atts)) {
             $competition = $atts['competition'];
             global $wpdb;
             $sql = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_type = 'ss_competition'", $competition);
             $r = $wpdb->get_results($sql, OBJECT);
             if (count($r) != 1) return 'Failed to find exactly one competition with a title of '.$competition;
-            $pid = $r[0]->ID;
-            $type = get_post_meta($pid, 'type', true);                                                             $bestof = get_post_meta($pid, 'bestof', true);   
-            $competitors = get_post_meta($pid, 'competitors', true);
-            if (! in_array($me->ID, $competitors)) return 'Sorry you are not competing in this event';
+            $comp_id = $r[0]->ID;
+            $type = get_post_meta($comp_id, 'type', true);
+            $bestof = get_post_meta($comp_id, 'bestof', true);   
+            $competitors = get_post_meta($comp_id, 'competitors', true);
+            if (! in_array($me->ID, $competitors) && ! $tman) return 'Sorry you are not competing in this event';
         } else {
             return 'Competion not specified in call to short code.';
         }
-        $opponents = $this->types[$type]->get_opponents($pid,$me->ID);
 
         $html = '';
         $html .= '<form action="." method="POST">';
         $html .= wp_nonce_field('submit_score', 'annie the aardvark', true, false);
-        $html .= '<input type="hidden" name="comp_id" value="' .$pid . '">';
-        $html .= '<input type="hidden" name="you_id" value="' .$me->ID . '">';
-
+        $html .= '<input type="hidden" name="comp_id" value="' .$comp_id . '">';
+        $html .= '<input type="hidden" name="submitter_id" value ="' . $submitter_id . '">';
         $html .= '<label for="dateofmatch">The date of the match</label>';
         $html .= '<input type="date" id="dateofmatch" name="dateofmatch" value="' . date("Y-m-d") .'">';
-
-        $html .= '<label for="opp"><br/>Identify your opponent:</label>';
+        if ($tman) {
+            $opponents = $this->types[$type]->get_opponents($comp_id,0);
+            $html .= '<label for="you"><br/>Identify the first player:</label>'; 
+            $html .= '<select id="you" name="you_id">';
+            foreach ($opponents as $opponent) {
+                $user = get_user_by('ID', $opponent);
+                $name = $user->get('first_name') . ' ' . $user->get('last_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
+                $html .=  '<option' . "" . ' value="' .$user->ID. '">'. $name . '</option>';
+            }
+            $html .= '</select>';
+            $html .= '<label for="opp"><br/>Identify the opponent:</label>';
+            $your = "the first person's";
+        } else {
+            $opponents = $this->types[$type]->get_opponents($comp_id,$me->ID);
+            $html .= '<input type="hidden" name="you_id" value="' .$me->ID . '">';
+            $html .= '<label for="opp"><br/>Identify your opponent:</label>';
+            $your = "your";
+        }
         $html .= '<select id="opp" name="opp_id">';
 
         foreach ($opponents as $opponent) {
             $user = get_user_by('ID', $opponent);
-            $name = $user->get('last_name') . ', ' . $user->get('first_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
+            $name = $user->get('first_name') . ' ' . $user->get('last_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
             $html .=  '<option' . "" . ' value="' .$user->ID. '">'. $name . '</option>';
         }
         $html .= '</select>';
         $html .= '<div>';
         if ($bestof == 1) {
-            $html .= '<label for="you1"><br/>Please enter results of the match with your result first</label>';
+            $html .= '<label for="you1"><br/>Please enter the results of the match with ' . $your . ' result first</label>';
         } else {
-            $html .= '<label for="you1"><br/>Please enter the results in pairs for each game of the match. For each game your results should appear first</label>';
+            $html .= '<label for="you1"><br/>Please enter the results in pairs for each game of the match. For each game ' . $your . ' results should appear first</label>';
         }
         for ($i = 1; $i <= $bestof; $i++) {
             if ($i != 1) $html .= ', ';
@@ -178,12 +196,17 @@ class Store_Scores_Public {
             $fail = sanitize_title( $_GET['fail'] );
 
             switch ( $fail ) {
+
             case 'nodraws' :
                 $message = 'Draws are not permitted.';
                 break;
 
             case 'extra' :
                 $message = 'You have tried to record a superfluous game.';
+                break;
+
+            case 'nocontest':
+                $message = 'These people were not due to play.';
                 break;
 
             default :
@@ -252,6 +275,15 @@ class Store_Scores_Public {
                 }
             }
         }
+
+        // A manager can submit results for an invalid pair of opponenets
+        if (! $fail) { 
+            $type = get_post_meta($comp_id, 'type', true);
+            if (! in_array($_POST['opp_id'], $this->types[$type]->get_opponents($comp_id,$_POST['you_id']))) {
+                $fail = "nocontest";
+            }
+        }
+
         $url = remove_query_arg(["fail","success"]);
         if ($fail) {
             $url = add_query_arg('fail', $fail, $url);
@@ -260,14 +292,38 @@ class Store_Scores_Public {
             $result['date'] = $_POST['dateofmatch'];
             $result['wins'] = $wins;
             $result['you'] = ['person' => $_POST['you_id'], 'scores' => $you];
-            $result['opp'] = ['person' => $_POST['opp_id'], 'scores' =>$opp];
-            $email = get_user_by('ID', $_POST['opp_id'])->get('user_email');
-            $you_user = get_user_by('ID', $_POST['you_id']);
+            $result['opp'] = ['person' => $_POST['opp_id'], 'scores' => $opp];
 
-            $name = $you_user->get('first_name') . ' ' . $you_user->get('last_name');
+            $you = get_user_by('ID', $_POST['you_id']);
+            $opp = get_user_by('ID', $_POST['opp_id']);
+            $submitter = get_user_by('ID', $_POST['submitter_id']);
+            $name = $submitter->get('first_name') . ' ' . $submitter->get('last_name');
             $subject = "Result recorded by " . $name;
-            $msg = var_export($result, true);
-            wp_mail($email, $subject, $msg);
+            $headers = ['Content-Type: text/html; charset=UTF-8'];
+            foreach ([$you,$opp] as $recipient) {
+                if ($submitter->ID !== $recipient->ID) {
+                    $msg = '<!DOCTYPE html PUBLIC “-//W3C//DTD XHTML 1.0 Transitional//EN” "https://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">';
+                    $msg .= '<html xmlns=“https://www.w3.org/1999/xhtml”>';
+                    $msg .= '<body>';
+                    $msg .= '<p>' . $recipient->get('first_name') . ',</p>';
+                    $msg .= '<p>' . $name . ' submitted a result for a match in ' . get_the_title($comp_id) . ' played on the ' . $result['date'] .'.</p>';
+                    $msg .= '<table>';
+                    $msg .= '<tr><td>' . $you->get('first_name') . ' ' . $you->get('last_name') . '</td>';
+                    foreach ($result['you']['scores'] as $s) {
+                        $msg .= '<td>' . $s . '</td>';
+                    }
+                    $msg .= '</tr>';
+                    $msg .= '<tr><td>' . $opp->get('first_name') . ' ' . $opp->get('last_name') . '</td>';
+                    foreach ($result['opp']['scores'] as $s) {
+                        $msg .= '<td>' . $s . '</td>';
+                    }
+                    $msg .= '</tr>';
+                    $msg .= '</table>';
+                    $msg .= '</body>';
+                    $msg .= '</html>';
+                    wp_mail($recipient->get('user_email'), $subject, $msg, $headers);
+                }
+            }
             add_post_meta($comp_id, 'result', $result);
         }
         wp_safe_redirect( $url );
@@ -288,11 +344,9 @@ class Store_Scores_Public {
         if (count($r) != 1) {
             return 'Failed to find exactly one competition with a title of '.$competition;
         }
-        $pid = $r[0]->ID;
-        $type = get_post_meta($pid, 'type', true);
-        return $this->types[$type]->get_results($pid);
+        $comp_id = $r[0]->ID;
+        $type = get_post_meta($comp_id, 'type', true);
+        return $this->types[$type]->get_results($comp_id);
     } 
 
 }
-
-

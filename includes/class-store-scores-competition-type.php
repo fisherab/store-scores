@@ -10,7 +10,6 @@ abstract class Store_Scores_Competition_Type {
     abstract public function get_results($comp_id);
 
     protected function generateBlockTable($table, $ranking) {
-        write_log($table);
         $html = '<div id="block_table"><table>';
         $html .= '<tr>';
         $html .= '<th>Name</th>';

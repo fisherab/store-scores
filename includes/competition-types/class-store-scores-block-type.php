@@ -18,14 +18,12 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
             $you_id = $you['person'];
             $opp = $result['opp'];
             $opp_id = $opp['person'];
-            write_log([$you_id, $opp_id]);
             if ($player_id == $you_id) {
                 $avoid[] = $opp_id;
             } elseif ($player_id == $opp_id) {
                 $avoid[] = $you_id;
             }
         }
-        write_log($avoid);
         $opponents = array_diff($competitors,$avoid);
         return $opponents;
     }
@@ -42,7 +40,7 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
      */
     public function get_description() {
         $html = '<div>';
-        $html .= '<p>Games should be played as 18pt (1 and 3-back variation) games with a 2.5 hour time limit. Games will be handicap using a base of 9.<p>';
+        $html .= '<p>Games should be played as 18pt (1 and 3-back variation) games with a 2.5 hour time limit. Games will be handicap using a base of 9.</p>';
         $html .= '<p>Draws are not permitted, and the rules for resolving the winner when the scores are level after the time turns should be followed.</p>';
         $html .= '<p>The best record will be determined by the following criteria, in this order:</p>';
         $html .= '<ol>';
@@ -144,9 +142,9 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
     }
 
     private function by_wins($a, $b) {
-        if ($a[1] == $b[1]) {
+        if ($a[1] === $b[1]) {
             return 0;
         }
-        return ($a[1] <  $b[1]) ? 1: 1;
+        return ($a[1] > $b[1]) ? -1: 1;
     }
 }
