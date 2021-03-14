@@ -6,3 +6,8 @@ input.croquet {
     width: auto !important;
     display: inline !important
 }
+
+div.fail {
+    color: red !important;
+    weight: bold !important;
+}

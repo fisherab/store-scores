@@ -193,36 +193,38 @@ class Store_Scores_Public {
 
         }  
         $html .= '</div>';
-        $html .= '<input type="submit" name="send-scores" id="submit" class="submit"/>';
+        $html .= '<input type="submit" name="send-scores" id="submit-' . $comp_id . '"  class="submit"/>';
         $html .= '</form>';
 
-        if ( isset( $_GET['fail'] ) ) {
-            $fail = sanitize_title( $_GET['fail'] );
+        if ( isset( $_GET['comp_id']) && ($_GET['comp_id'] == $comp_id)) {
+            if ( isset( $_GET['fail'] ) ) {
+                $fail = sanitize_title( $_GET['fail'] );
 
-            switch ( $fail ) {
+                switch ( $fail ) {
 
-            case 'nodraws' :
-                $message = 'Draws are not permitted.';
-                break;
+                case 'nodraws' :
+                    $message = 'Draws are not permitted.';
+                    break;
 
-            case 'extra' :
-                $message = 'You have tried to record a superfluous game.';
-                break;
+                case 'extra' :
+                    $message = 'You have tried to record a superfluous game.';
+                    break;
 
-            case 'nocontest':
-                $message = 'These people were not due to play.';
-                break;
+                case 'nocontest':
+                    $message = 'These people were not due to play.';
+                    break;
 
-            default :
-                $message = 'Something went wrong.';
-                break;
+                default :
+                    $message = 'Something went wrong.';
+                    break;
+                }
+
+                $html .= '<div class="fail"><p>' . esc_html( $message ) . '</p></div>';
             }
 
-            $html .= '<div class="fail"><p>' . esc_html( $message ) . '</p></div>';
-        }
-
-        if ( isset( $_GET['success'] ) ) {
-            $html .= '<div class="success"><p>' . "Results succesfully uploaded" . '</p></div>';
+            if ( isset( $_GET['success'] ) ) {
+                $html .= '<div class="success"><p>' . "Results succesfully uploaded" . '</p></div>';
+            }
         }
 
         return $html;
@@ -289,6 +291,7 @@ class Store_Scores_Public {
         }
 
         $url = remove_query_arg(["fail","success"]);
+        $url = add_query_arg('comp_id',$comp_id,$url);
         if ($fail) {
             $url = add_query_arg('fail', $fail, $url);
         } else {
@@ -330,7 +333,7 @@ class Store_Scores_Public {
             }
             add_post_meta($comp_id, 'result', $result);
         }
-        wp_safe_redirect( $url );
+        wp_safe_redirect( $url . '#submit-' . $comp_id);
         exit();
     }
 
