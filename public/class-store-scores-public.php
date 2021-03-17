@@ -241,7 +241,6 @@ class Store_Scores_Public {
         $comp_id = $_POST['comp_id'];
         $bestof = get_post_meta($comp_id, 'bestof', true); 
 
-        $wins = 0;
         for ($i = 1; $i <= $bestof; $i++) {
             $you[$i] = $_POST['you' . $i];
             $opp[$i] = $_POST['opp' . $i];
@@ -249,10 +248,6 @@ class Store_Scores_Public {
                 $you[$i] = 0;
             } if (empty($opp[$i])) {
                 $opp[$i] = 0;
-            }
-
-            if ($you[$i] > $opp[$i]) {
-                $wins++;
             }
         }
         if ($bestof == 1) {
@@ -297,9 +292,9 @@ class Store_Scores_Public {
         } else {
             $url = add_query_arg('success', 1, $url);
             $result['date'] = $_POST['dateofmatch'];
-            $result['wins'] = $wins;
             $result['you'] = ['person' => $_POST['you_id'], 'scores' => $you];
             $result['opp'] = ['person' => $_POST['opp_id'], 'scores' => $opp];
+            $result['timestamp'] = time();
 
             $you = get_user_by('ID', $_POST['you_id']);
             $opp = get_user_by('ID', $_POST['opp_id']);
