@@ -63,14 +63,11 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
      *  $comp_id id of the competition custom post
      */
     public function get_results($comp_id) {
-        $competition = get_post_meta($comp_id);
-        if (array_key_exists('result', $competition)) {
-            $results = $competition['result'];
-        } else {
+        $results = get_post_meta($comp_id,'result');
+        if (! $results) {
             return "No matches completed yet";
         }
-        foreach ($results as $n => $result) {
-            $result = unserialize($result);
+        foreach ($results as $result) {
             $you_id = $result['you']['person'];
             $opp_id = $result['opp']['person'];
             $records[$you_id][] = $result;

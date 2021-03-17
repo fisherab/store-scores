@@ -30,7 +30,7 @@ class Store_Scores_Ladder_Type extends Store_Scores_Competition_Type {
     public function get_description() {
         $html = "<div>";
         $html .= "<p>You may challenge any club member to a game, regardless of whether they are on the ladder already or are yet to play their first game. Games should ideally be arranged and played within a week of a challenge being issued.</p>";
-        $html .= "<p>Your initial ladder ranking points are set to 100, and you gain a point for winning a game and drop a point for losing. This means the ladder should remain balanced if some players play more games with other playing less. Your ladder position is determined by ladder ranking points. If a tie break is required then games won and percentage of games won are considered.</p>";
+        $html .= "<p>Your initial ladder ranking points are set to 100, and you gain a point for winning a game and drop a point for losing. This means the ladder should remain balanced if some players play more games with other playing less. Your ladder position is determined by ladder ranking points.</p>";
         $html .= "</div>";
         return $html;
     }
@@ -41,38 +41,62 @@ class Store_Scores_Ladder_Type extends Store_Scores_Competition_Type {
      *  $comp_id id of the competition custom post
      */
     public function get_results($comp_id) {
-        $needed = (intval(get_post_meta($comp_id, 'bestof', true))+1)/2; 
+        $bestof = get_post_meta($comp_id, 'bestof', true); 
         $rankings = [];
-        $results = get_post_meta($comp_id)['result'];
-        foreach ($results as $n => $result) { 
-            $result = unserialize($result);
+        $results = get_post_meta($comp_id,'result');
+        foreach ($results as $result) { 
             $you = $result['you'];
             $you_id = $you['person'];
             $opp = $result['opp'];
             $opp_id = $opp['person'];
+            $you_wins = 0;
+            $opp_wins = 0;
+            for ($i = 1; $i <= $bestof; $i++) {
+                if ($you['scores'][$i] > $opp['scores'][$i]) {
+                    $you_wins++;
+                } else {
+                    $opp_wins++;
+                }
+            }
+
             if (! isset($rankings[$you_id])) {
-                $rankings[$you_id] = 100;
+                $rankings[$you_id] = [$you_id,100,0,0];
             }
             if (! isset($rankings[$opp_id])) {
-                $rankings[$opp_id] = 100;
+                $rankings[$opp_id] = [$opp_id,100,0,0];
             }
-            if (intval($result['wins']) >= $needed) {
-                $rankings[$you_id]++;
-                $rankings[$opp_id]--;
+            $rankings[$you_id][3]++;
+            $rankings[$opp_id][3]++;
+            if ($you_wins > $opp_wins) {
+                $rankings[$you_id][1]++;
+                $rankings[$opp_id][1]--;
+                $rankings[$you_id][2]++;
             } else {
-                $rankings[$you_id]--;
-                $rankings[$opp_id]++;
+                $rankings[$you_id][1]--;
+                $rankings[$opp_id][1]++;
+                $rankings[$opp_id][2]++;
             } 
         }
-        arsort($rankings, SORT_NUMERIC);
+        usort($rankings, [$this, 'sort_by_points']);
         $html = "<div><table>";
-        foreach ($rankings as $person_id => $ranking) {
+        $html .= '<tr><td>Name</td><td>Points</td><td>Wins</td><td>Games</td></tr>';
+        foreach ($rankings as $ranking) {
+            $person_id = $ranking[0];
             $person = get_user_by("ID", $person_id);
             $person_name = $person->get('first_name') . ' ' . $person->get('last_name');
-            $html .= '<tr><td>' . $person_name . '<td><td>' . $ranking . '</td></tr>';
+            $html .= '<tr><td>' . $person_name . '</td><td>' . $ranking[1] . '</td><td>' . $ranking[2] . '</td><td>' . $ranking[3] . '</td></tr>';
         }
         $html .= '</table></div>';
         return $html;
+    }
+
+    private function sort_by_points($ar, $br) {
+        $a = $ar[1];
+        $b = $br[1];
+        if ($a === $b) {
+            return 0;
+        }
+        return ($a < $b) ? 1:-1;
     }
 
 }
