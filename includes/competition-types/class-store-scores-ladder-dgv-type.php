@@ -3,7 +3,7 @@
 /**
  * This represents a normal Ladder competition
  */
-class Store_Scores_Ladder_2_Type extends Store_Scores_Competition_Type {
+class Store_Scores_Ladder_DGV_Type extends Store_Scores_Competition_Type {
 
     /**
      * Need to return all players other than one one specified
@@ -31,7 +31,7 @@ class Store_Scores_Ladder_2_Type extends Store_Scores_Competition_Type {
      * Get unique short name to display to admin
      */
     public function get_tag() {
-        return "Ladder-2";
+        return "Ladder (DGV)";
     }
 
     /** 
