@@ -1,11 +1,4 @@
 <?php
-/**
- * The public-facing functionality of the plugin.
- *
- * @package    Store_Scores
- * @subpackage Store_Scores/public
- *
- */
 
 /** 
  * Class holding a single match result
@@ -98,13 +91,11 @@ class Store_Scores_Public {
      *  Return human description about the competition
      */
     public function get_description($atts) {
-        if (array_key_exists('competition', $atts)) {
-            $competition = $atts['competition'];
-            global $wpdb;
-            $sql = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_type = 'ss_competition'", $competition);
-            $r = $wpdb->get_results($sql, OBJECT);
-            if (count($r) != 1) return 'Failed to find exactly one competition with a title of '.$competition;
-            $comp_id = $r[0]->ID;
+        if (array_key_exists('id', $atts)) {
+            $comp_id = $atts['id'];
+            if (get_post_type($comp_id) !== 'ss_competition') {
+                return "The id specified is not of a competition";
+            } 
             $type = get_post_meta($comp_id, 'type', true);
             return $this->types[$type]->get_description();
         } else {
@@ -126,13 +117,12 @@ class Store_Scores_Public {
         $me = wp_get_current_user();
         if ($me->ID === 0) return 'Sorry you must be logged in to enter a result.';
         $submitter_id = $me->ID;
-        if (array_key_exists('competition', $atts)) {
-            $competition = $atts['competition'];
-            global $wpdb;
-            $sql = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_type = 'ss_competition'", $competition);
-            $r = $wpdb->get_results($sql, OBJECT);
-            if (count($r) != 1) return 'Failed to find exactly one competition with a title of '.$competition;
-            $comp_id = $r[0]->ID;
+        if (array_key_exists('id', $atts)) {
+            $comp_id = $atts['id'];
+            if (get_post_type($comp_id) !== 'ss_competition') {
+                return "The id specified is not of a competition";
+            } 
+            $type = get_post_meta($comp_id, 'type', true);
             $type = get_post_meta($comp_id, 'type', true);
             $bestof = get_post_meta($comp_id, 'bestof', true);   
             $competitors = get_post_meta($comp_id, 'competitors', true);
@@ -336,17 +326,14 @@ class Store_Scores_Public {
      *  Return formatted display of results
      */
     public function show_results($atts) {
-        if (! array_key_exists('competition', $atts)) {
+        if (array_key_exists('id', $atts)) {
+            $comp_id = $atts['id'];
+            if (get_post_type($comp_id) !== 'ss_competition') {
+                return "The id specified is not of a competition";
+            }
+        } else {
             return 'Competion not specified in call to short code.';
         }
-        $competition = $atts['competition'];
-        global $wpdb;
-        $sql = $wpdb->prepare("SELECT ID FROM $wpdb->posts WHERE post_title = %s AND post_type = 'ss_competition'", $competition);
-        $r = $wpdb->get_results($sql, OBJECT);
-        if (count($r) != 1) {
-            return 'Failed to find exactly one competition with a title of '.$competition;
-        }
-        $comp_id = $r[0]->ID;
         $type = get_post_meta($comp_id, 'type', true);
         return $this->types[$type]->get_results($comp_id);
     } 

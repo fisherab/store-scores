@@ -42,10 +42,10 @@ class Store_Scores_Competition {
         );
         $args = array(
             'labels'        => $labels,
-            'description'   => 'Holds our products and product specific data',
+            'description'   => 'Holds an individual competition',
             'public'        => true,
             'menu_position' => 5,
-            'supports'      => array( 'title', 'editor'  ),
+            'supports'      => ['title'],
             'has_archive'   => true,
         );
         register_post_type( 'ss_competition', $args ); 
@@ -56,6 +56,12 @@ class Store_Scores_Competition {
      */
     public function add_competition_boxes() {
         global $post;
+
+        add_meta_box(
+            'competition_id',
+            'Competition ID',
+            [$this,'competition_id_content'],
+            'ss_competition', 'advanced', 'default');
 
         add_meta_box(
             'competition_type',
@@ -110,6 +116,14 @@ class Store_Scores_Competition {
         }
 
     }
+
+    /** 
+     * Invoked by add_competition to display competition id
+     */
+    public function competition_id_content($post) {
+        echo '<legend>Reference with shortcodes of [ss-get-description id=' . $post->ID . '], [ss-enter-score id=' . $post->ID . '] and [ss-show-results id=' . $post->ID . ']</legend>';
+    }
+
 
     /** 
      * Invoked by add_competitition to display selector for competition type
