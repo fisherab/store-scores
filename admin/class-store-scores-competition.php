@@ -41,12 +41,13 @@ class Store_Scores_Competition {
             'not_found_in_trash' => __( 'No competitions found in the Trash' ), 
         );
         $args = array(
-            'labels'        => $labels,
-            'description'   => 'Holds an individual competition',
-            'public'        => true,
-            'menu_position' => 5,
-            'supports'      => ['title'],
-            'has_archive'   => true,
+            'labels'          => $labels,
+            'description'     => 'Holds an individual competition',
+            'public'          => true,
+            'menu_position'   => 5,
+            'supports'        => ['title'],
+            'has_archive'     => true,
+            'capability_type' => 'page',
         );
         register_post_type( 'ss_competition', $args ); 
     }
@@ -207,21 +208,19 @@ class Store_Scores_Competition {
         echo '</select>';
     }
 
- public function save_competition( $post_id ) {
-        if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) 
-            return;
+    public function save_competition( $post_id ) {
+        if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+           return;
+        }
 
         if ( ! isset ($_POST['post_type']) || 'ss_competition' != $_POST['post_type'] ) {
             return;
         }
 
-        if ( 'post' == $_POST['post_type'] ) {
-            if ( !current_user_can( 'edit_page', $post_id ) )
-                return;
-        } else {
-            if ( !current_user_can( 'edit_post', $post_id ) )
-                return;
+        if ( !current_user_can( 'edit_page', $post_id ) ) {
+            return;
         }
+
         for ($x = 0; ; $x++) {
             $key = 'competitor_'.$x;
             if (! array_key_exists($key, $_POST)) break;
