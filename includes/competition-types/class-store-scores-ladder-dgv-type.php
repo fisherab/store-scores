@@ -13,17 +13,7 @@ class Store_Scores_Ladder_DGV_Type extends Store_Scores_Competition_Type {
      */
     public function get_opponents($comp_id, $player_id) {
         $competitors = get_post_meta($comp_id,'competitors', true);
-        $remove = [$player_id];
-            $ladder = $this->build_ladder($comp_id);
-        for ($ladder->rewind(); $ladder->valid(); $ladder->next()) {
-            if ($ladder->current()[0] == $player_id){
-                break;
-            }
-        }
-        for ($ladder->next(); $ladder->valid(); $ladder->next()) {
-            $remove[] = $ladder->current()[0];
-        }
-        $opponents = array_diff($competitors,$remove);
+        $opponents = array_diff($competitors,[$player_id, 0]);
         return $opponents;
     }
 
@@ -99,7 +89,7 @@ class Store_Scores_Ladder_DGV_Type extends Store_Scores_Competition_Type {
                 }
             }
 
-//            write_log("Result " . $you_id . ' ' . $you_wins . ' ' . $opp_id . ' ' . $opp_wins);
+            //            write_log("Result " . $you_id . ' ' . $you_wins . ' ' . $opp_id . ' ' . $opp_wins);
 
             $you_pos = null;
             $opp_pos = null;
@@ -127,24 +117,24 @@ class Store_Scores_Ladder_DGV_Type extends Store_Scores_Competition_Type {
             if ($you_wins > $opp_wins) {
                 $you_entry[1]++;
                 if ($you_pos > $opp_pos) {
- //                   write_log("You " . $you_id . " won and are moving up");
+                    //                   write_log("You " . $you_id . " won and are moving up");
                     $ladder->offsetUnset($you_pos);
                     $ladder->add($opp_pos, $you_entry);
                     $ladder->offsetSet($opp_pos+1, $opp_entry);
                 } else {
- //                   write_log("You " . $you_id . " kept the place");
+                    //                   write_log("You " . $you_id . " kept the place");
                     $ladder->offsetSet($you_pos, $you_entry);
                     $ladder->offsetSet($opp_pos, $opp_entry);
                 }
             } else {
                 $opp_entry[1]++;
                 if ($you_pos < $opp_pos) {
- //                   write_log("Opp " . $opp_id . " won and are moving up");
+                    //                   write_log("Opp " . $opp_id . " won and are moving up");
                     $ladder->offsetUnset($opp_pos);
                     $ladder->add($you_pos, $opp_entry);
                     $ladder->offsetSet($you_pos+1, $you_entry);
                 } else {
- //                   write_log("Opp " . $opp_id . " kept the place");
+                    //                   write_log("Opp " . $opp_id . " kept the place");
                     $ladder->offsetSet($opp_pos, $opp_entry);
                     $ladder->offsetSet($you_pos, $you_entry);
                 }

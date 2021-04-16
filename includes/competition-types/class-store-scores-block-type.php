@@ -43,16 +43,8 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
      */
     public function get_description() {
         $html = '<div>';
-        $html .= '<p>Games should be played as 18pt (1 and 3-back variation) games with a 2.5 hour time limit. Games will be handicap using a base of 9.</p>';
-        $html .= '<p>Draws are not permitted, and the rules for resolving the winner when the scores are level after the time turns should be followed.</p>';
-        $html .= '<p>The best record will be determined by the following criteria, in this order:</p>';
-        $html .= '<ol>';
-        $html .= '<li>Number of games won</li>';
-        $html .= '<li>Who-beat-whom</li>';
-        $html .= '<li>Net points accrued from all games</li>';
-        $html .= '<li>Total points accrued from all games</li>';
-        $html .= '<li>Who reported the result of their last game first</li>';
-        $html .= '</ol>';
+        $html .= '<p>Normally everyone plays one match against everyone else.</p>';
+        $html .= '<p>Once you have played someone you will not be offered the chance to record another result against them.</p>';
         $html .= '</div>';
         return $html;
     }
@@ -128,8 +120,6 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
         }
 
         uasort ($ranking_wins, [$this, 'by_wins']);
-
-        // TODO add more detailed ranking
 
         $modpos = 0;
         $oldwins = -1;
