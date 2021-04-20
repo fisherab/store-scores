@@ -68,13 +68,25 @@ class Store_Scores_Competition {
             'competition_type',
             'Competition Type',
             [$this,'competition_type_content'],
-            'ss_competition', 'advanced', 'default');
+            'ss_competition', 'side', 'default');
 
         add_meta_box(
             'competition_bestof',
             'Best of',
             [$this,'competition_bestof_content'],
-            'ss_competition', 'advanced', 'default');
+            'ss_competition', 'side', 'default');
+
+        add_meta_box(
+            'competition_numresults',
+            'Number of results to display',
+            [$this,'competition_numresults_content'],
+            'ss_competition', 'side', 'default');
+
+        add_meta_box(
+            'competition_numtodelete',
+            'Number of results to list for manager to allow deletions',
+            [$this,'competition_numtodelete_content'],
+            'ss_competition', 'side', 'default');
 
         $managers = get_post_meta($post->ID,'managers',true);
         if ($managers) {
@@ -163,6 +175,26 @@ class Store_Scores_Competition {
     }
 
     /**
+     * Invoked by add_competitition to display selector for number of their own results to display to competitors
+     */
+    public function competition_numresults_content ($post) {
+        $nr = get_post_meta($post->ID,'numresults',true);
+        if (! $nr) $nr = 5;
+        echo '<label for="numresults"></label>';
+        echo '<input type="number" min="0" id="numresults" name="numresults" value="' . $nr . '" >';
+    }
+
+    /**
+     * Invoked by add_competitition to display selector for number of most recent recorded results to allow deletion
+     */
+    public function competition_numtodelete_content ($post) {
+        $nd = get_post_meta($post->ID,'numtodelete',true);
+        if (! $nd) $nd = 5;
+        echo '<label for="numtodelete"></label>';
+        echo '<input type="number" min="0" id="numtodelete" name="numtodelete" value="' . $nd . '" >';
+    }
+
+    /**
      * Invoked by add_competition_boxes to display boxes to input competitor names for a specific ss_competition.
      */
     public function competitor_content( $post, $args ) {
@@ -210,7 +242,7 @@ class Store_Scores_Competition {
 
     public function save_competition( $post_id ) {
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-           return;
+            return;
         }
 
         if ( ! isset ($_POST['post_type']) || 'ss_competition' != $_POST['post_type'] ) {
@@ -234,6 +266,8 @@ class Store_Scores_Competition {
 
         update_post_meta( $post_id, 'type', $_POST['type']);
         update_post_meta( $post_id, 'bestof', $_POST['bestof']);
+        update_post_meta( $post_id, 'numresults', $_POST['numresults']);
+        update_post_meta( $post_id, 'numtodelete', $_POST['numtodelete']);
         update_post_meta( $post_id, 'competitors', array_values(array_diff(array_unique($competitors),[0])));
         update_post_meta( $post_id, 'managers', array_values(array_diff(array_unique($managers),[0])));
     }

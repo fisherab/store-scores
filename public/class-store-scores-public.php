@@ -84,6 +84,7 @@ class Store_Scores_Public {
     private function register_short_codes() {
         add_shortcode('ss-get-description', [$this, 'get_description']);
         add_shortcode('ss-enter-score', [$this, 'enter_score']);
+        add_shortcode('ss-list-scores', [$this, 'list_scores']);
         add_shortcode('ss-show-results', [$this, 'show_results']);
     }
 
@@ -103,16 +104,6 @@ class Store_Scores_Public {
         }
     }      
 
-    /**
-     * A competition of type competition_ss is a post holding all the data about a competition.
-     *
-     * The competition has post meta data:
-     *  * competitors - an array of competitor ids registered for this competition
-     *  * results - an array of game result objects.
-     *
-     * @param array $atts arguments with the short code
-     * @param string $content material between the opening and closing of the shortcode
-     */
     public function enter_score($atts, $content=null) {
         $me = wp_get_current_user();
         if ($me->ID === 0) return 'Sorry you must be logged in to enter a result.';
@@ -122,7 +113,6 @@ class Store_Scores_Public {
             if (get_post_type($comp_id) !== 'ss_competition') {
                 return "The id specified is not of a competition";
             } 
-            $type = get_post_meta($comp_id, 'type', true);
             $type = get_post_meta($comp_id, 'type', true);
             $bestof = get_post_meta($comp_id, 'bestof', true);   
             $competitors = get_post_meta($comp_id, 'competitors', true);
@@ -142,6 +132,29 @@ class Store_Scores_Public {
         $html .= wp_nonce_field('submit_score', 'annie the aardvark', true, false);
         $html .= '<input type="hidden" name="comp_id" value="' .$comp_id . '">';
         $html .= '<input type="hidden" name="submitter_id" value ="' . $submitter_id . '">';
+        if ($tman) {
+            $results = get_post_meta($comp_id, 'result');
+
+            usort ($results, function($a,$b) {
+                if ($a['date'] == $b['date']) {
+                    return 0;
+                }
+                return ($a['date'] < $b['date']) ? 1 : -1;
+            });
+
+            $html .= '<table>';
+            $n = 0;
+            $max = get_post_meta($comp_id, 'numtodelete', true);
+            $html .= '<h4>Showing ' . $max . ' most recent results - select to delete</h3>';
+            foreach ($results as $result) {
+                if ($n == $max) break;
+                $p1 = $this->getShortName($result['you']['person']);
+                $p2 = $this->getShortName($result['opp']['person']);
+                $check = '<input type="checkbox" name="delete_' . $n++ . '" value="' . str_replace('"', "'", serialize($result)) . '"';
+                $html .= '<tr><td>' . $result['date'] . '</td><td>' . $p1 .  '</td><td>' . $p2 . '</td><td>' . $check .  '</td></tr>';
+            }
+            $html .= '</table>';
+        }
         $html .= '<label for="dateofmatch">The date of the match</label>';
         $html .= '<input type="date" id="dateofmatch" name="dateofmatch" value="' . date("Y-m-d") .'">';
         if ($tman) {
@@ -220,6 +233,72 @@ class Store_Scores_Public {
         return $html;
     }
 
+    private function getNameLabel($id) {
+        $user = get_user_by('ID', $id);
+        return $user->get('first_name') . ' ' . $user->get('last_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
+    }
+
+    private function getShortName($id) {
+        $user = get_user_by('ID', $id);
+        return $user->get('first_name') . ' ' . $user->get('last_name')[0];
+    }
+
+    public function list_scores($atts, $content=null) {
+        $me = wp_get_current_user();
+        if ($me->ID === 0) return 'Sorry you must be logged in to work with results.';
+        $submitter_id = $me->ID;
+        if (array_key_exists('id', $atts)) {
+            $comp_id = $atts['id'];
+            if (get_post_type($comp_id) !== 'ss_competition') {
+                return "The id specified is not of a competition";
+            } 
+            $competitors = get_post_meta($comp_id, 'competitors', true);
+            if (! in_array($me->ID, $competitors) ) return 'Sorry you are not competing in this event';
+        } else {
+            return 'Competion not specified in call to short code.';
+        }
+
+        $results = get_post_meta($comp_id, 'result');
+        foreach ($results as $result) {
+            if ($result['you']['person'] == $me->ID) {
+                $r = [$result['you'],$result['opp']];
+            } else if ($result['opp']['person'] == $me->ID) {
+                $r = [$result['opp'],$result['you']];
+            } else {
+                $r = null;
+            }
+            if ($r) {
+                $presults[] = ['date' => $result['date'], 'person'=> $r[1]['person'], 'scores' => [$r[0]['scores'],$r[1]['scores']]];
+            }
+        } 
+
+        $html = '';
+        if (isset($presults)) {
+            usort ($presults, function($a,$b) {
+                if ($a['date'] == $b['date']) {
+                    return 0;
+                }
+                return ($a['date'] < $b['date']) ? 1 : -1;
+            });
+
+            $max = get_post_meta($comp_id, 'numresults', true);
+            $i = 0;
+                     $html .= '<h4>Showing your ' . $max . ' most recent results</h3>';
+
+            $html .= '<table>';
+            foreach ($presults as $presult) {
+                if ($i++ == $max) break;
+                $html .= '<tr><td>' . $presult['date'] . '</td><td>' . $this->getnameLabel($presult['person']) . '</td>';
+                foreach ($presult['scores'][0] as $n=>$v) {
+                    $html .= '<td>' .  $presult['scores'][0][$n] . '-' . $presult['scores'][1][$n] . '</td>';
+                }
+                $html .= '</tr>';
+            }
+            $html .= '</table>';
+        }
+        return $html;
+    }
+
     public function process_submit_score() {
         if ( ! isset( $_POST['send-scores'] ) || ! isset( $_POST['annie_the_aardvark'] ) )  {
             return;
@@ -230,6 +309,12 @@ class Store_Scores_Public {
         $fail = '';
         $comp_id = $_POST['comp_id'];
         $bestof = get_post_meta($comp_id, 'bestof', true); 
+        foreach ($_POST as $key => $value) {
+            if (str_starts_with($key,'delete_')) {
+                $result = unserialize(str_replace("\'",'"',$value));
+                delete_post_meta($comp_id,'result',$result);
+            }
+        }
 
         for ($i = 1; $i <= $bestof; $i++) {
             $you[$i] = $_POST['you' . $i];
