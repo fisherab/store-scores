@@ -338,7 +338,7 @@ class Store_Scores_Public {
                     $fail ='nodraws';
                 }
                 if (! $fail) {
-                    $need3 = ($you[1] > $opp[1]) && ($you[2] < $opp[2]);
+                    $need3 = (($you[1] > $opp[1]) && ($you[2] < $opp[2]) || ($you[1] < $opp[1]) && ($you[2] > $opp[2]));
                     if (!$need3) {
                         if (($you[3] != 0) || ($opp[3] != 0)) {
                             $fail = 'extra';
