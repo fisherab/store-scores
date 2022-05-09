@@ -28,14 +28,14 @@ if ( ! defined( 'WPINC' ) ) {
     die;
 }
 
-if (! function_exists("write_log")) {
-    function write_log($log) { // TODO delete when no longer needed or make it depend  on WP_DEBUG
-        if (is_array($log) || is_object($log)){
-            error_log(print_r($log,true));
-        } else {
-            error_log($log);
-        }
+function store_scores_log($msg) {
+    if (is_array($msg) || is_object($msg)){
+        $msg = print_r($msg,true);
     }
+    $file = plugin_dir_path( __FILE__ ) . '/log.txt'; 
+    $fo = fopen( $file, "a" ); 
+    fputs($fo,$msg . PHP_EOL);
+    fclose($fo);
 }
 
 function store_scores_generate_response($type, $message){
