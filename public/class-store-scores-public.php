@@ -106,7 +106,7 @@ class Store_Scores_Public {
 
     public function enter_score($atts, $content=null) {
         $me = wp_get_current_user();
-        if ($me->ID === 0) return 'Sorry you must be logged in to enter a result.';
+        if ($me->ID === 0) return 'Sorry, you must be logged in to enter a result.';
         $submitter_id = $me->ID;
         if (array_key_exists('id', $atts)) {
             $comp_id = $atts['id'];
@@ -122,7 +122,7 @@ class Store_Scores_Public {
             } else {
                 $tman = false;
             }
-            if (! in_array($me->ID, $competitors) && ! $tman) return 'Sorry you are not competing in this event';
+            if (! in_array($me->ID, $competitors) && ! $tman) return 'Sorry, you are not competing in this event';
         } else {
             return 'Competion not specified in call to short code.';
         }
@@ -245,7 +245,7 @@ class Store_Scores_Public {
 
     public function list_scores($atts, $content=null) {
         $me = wp_get_current_user();
-        if ($me->ID === 0) return 'Sorry you must be logged in to work with results.';
+        if ($me->ID === 0) return 'Sorry, you must be logged in to work with results.';
         $submitter_id = $me->ID;
         if (array_key_exists('id', $atts)) {
             $comp_id = $atts['id'];
@@ -253,7 +253,7 @@ class Store_Scores_Public {
                 return "The id specified is not of a competition";
             } 
             $competitors = get_post_meta($comp_id, 'competitors', true);
-            if (! in_array($me->ID, $competitors) ) return 'Sorry you are not competing in this event';
+            if (! in_array($me->ID, $competitors) ) return 'Sorry, you are not competing in this event';
         } else {
             return 'Competion not specified in call to short code.';
         }
