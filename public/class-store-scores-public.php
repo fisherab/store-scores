@@ -96,8 +96,11 @@ class Store_Scores_Public {
             $comp_id = $atts['id'];
             if (get_post_type($comp_id) !== 'ss_competition') {
                 return "The id specified is not of a competition";
-            } 
+            }
             $type = get_post_meta($comp_id, 'type', true);
+            if ($type == '') {
+                return "The id specified is not of a competition";
+            }
             return $this->types[$type]->get_description();
         } else {
             return 'Competion not specified in call to short code.';
@@ -114,6 +117,9 @@ class Store_Scores_Public {
                 return "The id specified is not of a competition";
             } 
             $type = get_post_meta($comp_id, 'type', true);
+            if ($type == '') {
+                return "The id specified is not of a competition";
+            }
             $bestof = get_post_meta($comp_id, 'bestof', true);   
             $competitors = get_post_meta($comp_id, 'competitors', true);
             $managers = get_post_meta($comp_id, 'managers', true);
@@ -420,6 +426,9 @@ class Store_Scores_Public {
             return 'Competion not specified in call to short code.';
         }
         $type = get_post_meta($comp_id, 'type', true);
+        if ($type == '') {
+                return "The id specified is not of a competition";
+        }
         return $this->types[$type]->get_results($comp_id);
     } 
 

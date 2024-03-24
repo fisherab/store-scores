@@ -87,14 +87,14 @@ class Store_Scores_Admin {
     }
 
     public function render_competitors_increment() {
-        $options = get_option( 'store_scores_options' );
+        $options = get_option( 'store_scores_options', []);
         $value = '';
         if (array_key_exists('competitors_increment', $options)) $value=' value="' . $options['competitors_increment'] . '"';
         echo '<input id="store_scores_options_competitors_increment" name="store_scores_options[competitors_increment]" type="text"' . $value . '/>';
     }
 
     public function render_managers_increment() {
-        $options = get_option( 'store_scores_options' );
+        $options = get_option( 'store_scores_options', []);
         $value = '';
         if (array_key_exists('managers_increment', $options)) $value=' value="' . $options['managers_increment'] . '"';
         echo '<input id="store_scores_options_managers_increment" name="store_scores_options[managers_increment]" type="text"' . $value . '/>';

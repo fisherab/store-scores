@@ -1,0 +1,62 @@
+<?php
+$contents = file('php://stdin');
+$num = count($contents);
+$power = 1;
+$n = 0;
+while ($power < $num) {
+    $power = $power*2;
+    $n++;
+}
+$numbyes = $power - $num;
+
+// srand(98420924808);
+
+$draw=[];
+allocate_byes($draw,0,$power,$numbyes);
+
+shuffle($contents);
+$insert = 0;
+foreach ($contents as $value) {
+    while (array_key_exists($insert,$draw)) $insert++;
+    $draw[$insert] = trim($value);
+    $insert++;
+}
+print_r ("Draw\n");
+ksort($draw);
+foreach ($draw as $key => $value) print_r($key . ": " . $value . "\n");
+
+$fmt="%'0".$n."b";
+for ($key=0; $key<$power; $key++) {
+    $bin = bindec(strrev(sprintf($fmt,$key)));
+    $process[$bin] = $draw[$key];
+} 
+
+print_r("\nProcess\n");
+ksort($process);
+foreach ($process as $key => $value) print_r($key . ": " . $value . "\n");
+
+function allocate_byes(&$byes,$min,$count,$numbyes) {
+    $halfc = intdiv($count,2);
+    $halfn = intdiv($numbyes,2);
+    if ($numbyes == 0) return;
+    if ($count == 1) {
+        $byes[$min] = '-';
+        return;
+    }
+    if ($numbyes % 2 == 1) {
+        if (rand(0,1) == 0) {
+            allocate_byes($byes,$min,$halfc,$halfn);
+            allocate_byes($byes,$min+$halfc,$halfc,$halfn+1);
+        } else {
+            allocate_byes($byes,$min,$halfc,$halfn+1);
+            allocate_byes($byes,$min+$halfc,$halfc,$halfn);
+        }
+    } else {
+        allocate_byes($byes,$min,$halfc,$halfn);
+        allocate_byes($byes,$min+$halfc,$halfc,$halfn);
+    }
+}
+
+
+
+?>
