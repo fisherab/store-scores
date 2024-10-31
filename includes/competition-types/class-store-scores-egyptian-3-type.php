@@ -1,9 +1,9 @@
 <?php
 
 /**
- * This represents a normal Ladder competition
+ * This represents an Egyptian Ladder competition with 3 points being exchanged when players have the same points
  */
-class Store_Scores_Egyptian_Type extends Store_Scores_Competition_Type {
+class Store_Scores_Egyptian_3_Type extends Store_Scores_Competition_Type {
 
     /**
      * Need to return all players other than one one specified
@@ -21,7 +21,7 @@ class Store_Scores_Egyptian_Type extends Store_Scores_Competition_Type {
      * Get unique short name to display to admin
      */
     public function get_tag() {
-        return "Egyptian";
+        return "Egyptian 3";
     }
 
     /** 
@@ -44,10 +44,9 @@ class Store_Scores_Egyptian_Type extends Store_Scores_Competition_Type {
         $html .= "The number of points transferred is given in the table below.";
         $html .= "<table> ";
         $html .= "<tr><th>Difference in ranking points before the game</th><th>If player with higher ranking points wins</th><th>If player with lower ranking points wins</th></tr> ";
-        $html .= "<tr><td>0-7</td><td>4</td><td>4</td></tr> ";
-        $html .= "<tr><td>8-11</td><td>3</td><td>5</td></tr> ";
-        $html .= "<tr><td>12-15</td><td>2</td><td>6</td></tr> ";
-        $html .= "<tr><td>16+</td><td>1</td><td>7</td></tr> ";
+        $html .= "<tr><td>0-6</td><td>3</td><td>3</td></tr> ";
+        $html .= "<tr><td>7-11</td><td>2</td><td>4</td></tr> ";
+        $html .= "<tr><td>12+</td><td>1</td><td>5</td></tr> ";
         $html .= "</table> ";
         $html .= "</p>";
 
@@ -61,11 +60,22 @@ class Store_Scores_Egyptian_Type extends Store_Scores_Competition_Type {
      *  $comp_id id of the competition custom post
      */
     public function get_results($comp_id) {
+        $me = wp_get_current_user();
+        $managers = get_post_meta($comp_id, 'managers', true);
+        if ($managers) {
+            $tman = in_array($me->ID, $managers);
+        } else {
+            $tman = false;
+        }
+        store_scores_log("tman: " . $tman);
+        
         $bestof = get_post_meta($comp_id, 'bestof', true); 
         $rankings = [];
+        $games = [];
         $results = get_post_meta($comp_id,'result');
         store_scores_log("Count of results: " . count($results));
         foreach ($results as $result) {
+            # store_scores_log($result);
             $you = $result['you'];
             $you_id = $you['person'];
             $opp = $result['opp'];
@@ -89,47 +99,60 @@ class Store_Scores_Egyptian_Type extends Store_Scores_Competition_Type {
             $diff = $rankings[$you_id][1] - $rankings[$opp_id][1];
             $highwins = ($you_wins > $opp_wins && $diff > 0) || ($you_wins < $opp_wins && $diff < 0);
             $adiff = abs($diff);    
-            $transfer = 4;
-            if ($adiff >= 8 and $adiff <= 11) $transfer = $highwins? 3:5;
-            if ($adiff >= 12 and $adiff <= 15) $transfer = $highwins? 2:6;
-            if ($adiff >= 16) $transfer = $highwins? 1:7;
-            #store_scores_log($you['person'] . " " . $you[scores][1] . " " . $rankings[$you_id][1]);
-            #store_scores_log($opp['person'] . " " . $opp[scores][1] . " " . $rankings[$opp_id][1]);
-            #store_scores_log("Diff: " . $diff . " Highwins: " . $highwins);
-
+            $transfer = 3;
+            if ($adiff >= 7 and $adiff <= 11) $transfer = $highwins? 2:4;
+            if ($adiff >= 12) $transfer = $highwins? 1:5;
 
             $rankings[$you_id][3]++;
             $rankings[$opp_id][3]++;
             if ($you_wins > $opp_wins) {
+                $game = [$you_id, $rankings[$you_id][1],0,$opp_id, $rankings[$opp_id][1],0];
                 $rankings[$you_id][1]+=$transfer;
                 $rankings[$opp_id][1]-=$transfer;
                 $rankings[$you_id][2]++;
+                $game[2] = $rankings[$you_id][1];
+                $game[5] = $rankings[$opp_id][1];
             } else {
+                $game = [$opp_id, $rankings[$opp_id][1],0,$you_id, $rankings[$you_id][1],0];
                 $rankings[$you_id][1]-=$transfer;
                 $rankings[$opp_id][1]+=$transfer;
                 $rankings[$opp_id][2]++;
-            } 
-            #store_scores_log("$you_id " . $rankings[$you_id][1] . " " . $rankings[$you_id][2] . " " . $rankings[$you_id][3]);
-            #store_scores_log("$opp_id " . $rankings[$opp_id][1] . " " . $rankings[$opp_id][2] . " " . $rankings[$opp_id][3]);
+                $game[2] = $rankings[$opp_id][1];
+                $game[5] = $rankings[$you_id][1];
+            }
+            
+            $game[] = $result['date'];
+            $games[]=$game;
+            # store_scores_log($game);
         }
-        #$rankings[1][1] = 42;
-        #$rankings[2][1] = 42;
-        #$rankings[3][1] = 42;
-        #$rankings[4][1] = 42;
-        #$rankings[1][2] = 2;
-        #$rankings[2][2] = 2;
-        #$rankings[3][2] = 2;
-        #$rankings[4][2] = 2; 
-
-
+    
         usort($rankings, [$this, 'sort_by_points_wins_and_netwins']);
         $html = "<div><table>";
-        $html .= '<tr><td>Name</td><td>Points</td><td>Wins</td><td>Games</td></tr>';
+        $html .= '<tr><th>Name</th><th>Points</th><th>Wins</th><th>Games</th></tr>';
         foreach ($rankings as $ranking) {
             $person_id = $ranking[0];
             $person = get_user_by("ID", $person_id);
             $person_name = $person->get('first_name') . ' ' . $person->get('last_name');
             $html .= '<tr><td>' . $person_name . '</td><td>' . $ranking[1] . '</td><td>' . $ranking[2] . '</td><td>' . $ranking[3] . '</td></tr>';
+        }
+        $html .= '</table></div>';
+        if ($tman) {
+            $html .= "<h2>Games</h2>";
+        } else {
+            $html .= "<h2>Your games</h2>"; 
+        }
+        $html .= "<div><table>";
+        $html .= '<tr><th>Date</th><th>Winner</th><th>points</th><th>to</th><th>Loser</th><th>Points</th><th>to</th></tr>';
+        foreach ($games as $game) {
+            if ($tman || $game[0] == $me->ID || $game[3] ==  $me->ID   ) {
+                $person_id = $game[0];
+                $person = get_user_by("ID", $person_id);
+                $winner = $person->get('first_name') . ' ' . $person->get('last_name');
+                $person_id = $game[3];
+                $person = get_user_by("ID", $person_id);
+                $loser = $person->get('first_name') . ' ' . $person->get('last_name');
+                $html .= '<tr><td>' . $game[6]  . '</td><td>' . $winner . '</td><td>' . $game[1]. '</td><td>' . $game[2]  . '</td><td>' . $loser . '</td><td>' . $game[4]. '</td><td>' . $game[5];
+            }
         }
         $html .= '</table></div>';
         return $html;
