@@ -36,7 +36,8 @@ class Store_Scores_KO_Type extends Store_Scores_Competition_Type {
     private function get_sheet($comp_id) {
         $competitors = get_post_meta($comp_id,'competitors', true);
         $title = explode("byes:", get_the_title($comp_id));
-        $byeslist = explode(" ",$title[1]);
+        if ($title[1]) $byeslist = explode(" ",$title[1]);
+        else $byeslist = [];
         foreach ($byeslist as $value) $round[intval($value)] = "-";
         $insert = 0;
         foreach ($competitors as $value) {
