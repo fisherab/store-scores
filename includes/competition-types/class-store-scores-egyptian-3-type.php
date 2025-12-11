@@ -29,7 +29,7 @@ class Store_Scores_Egyptian_3_Type extends Store_Scores_Competition_Type {
      */
     public function get_description() {
         $html = "<div>";
-        $html .= "<p>Each player is initially assigned 100 ranking points. If a player beats a player of the same ranking then four points are transferred from the loser to the winner. However beating a higher ranked player results in more points being transferred and vice versa. Winning or losing a game may change your handicap but this change has no impact on the ranking points</p>";
+        $html .= "<p>Each player is initially assigned 100 ranking points. If a player beats a player of the same ranking then three points are transferred from the loser to the winner. However beating a higher ranked player results in more points being transferred and vice versa. Winning or losing a game may change your handicap but this change has no impact on the ranking points</p>";
         $html .= "<p>You may challenge any club member to a game, regardless of whether they are on the ladder already or are yet to play their first game. Failure to accept the challenge without good reason and to play the game within two weeks results in a maximum score being recorded for the challenger and 0 for the person who failed to play. Such results do not go on handicap cards as regular results would.</p>";
 
         $html .= "<p>";
