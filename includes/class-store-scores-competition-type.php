@@ -4,60 +4,49 @@
  * Abstract class for a competition type
  */
 abstract class Store_Scores_Competition_Type {
+
     abstract public function get_opponents($comp_id, $player_id);
+
     abstract public function get_tag();
+
     abstract public function get_description();
+
     abstract public function get_results($comp_id);
 
-    protected function generateBlockTable($table, $ranking) {
-        $html = '<div id="block_table"><table>';
-        $html .= '<tr>';
-        $html .= '<th>Name</th>';
-        $html .= '<th>#</th>';
-        foreach ($ranking as $slot) {
-            $competitor_id = $slot[0];
-            $competitor = $table[$competitor_id];
-            $html .= '<th>' . $competitor['initials'] . '</th>';
-        }
-        $html .= '<th>W</th>';
-        $html .= '<th>NH</th>';
-        $html .= '<th>TH</th>';
-        $html .= '</tr>';
-
-        foreach ($ranking as $slot) {
-            $competitor_id = $slot[0];
-            $pos = $slot[1];
-            $competitor = $table[$competitor_id];
-            $html .= '<tr>';
-            $html .= '<td>' . $competitor['name'] . '</td>';
-            $html .= '<td>' . $pos . '</td>';
-            $scores = $table[$competitor_id]['scores'];
-            foreach ($ranking as $slot2) {
-                $competitor_id2 = $slot2[0];
-                if (isset($scores[$competitor_id2])) {
-                    $match = $scores[$competitor_id2];
-                    $n = count($match[0]);
-                    $score = "";
-                    for ($j = 1; $j <= $n; $j++){
-                        if (strlen($score) != 0) {
-                            $score .= ', ';
-                        }
-                        $score .= strval($match[0][$j]) . '-' . strval($match[1][$j]);
-                    }
-                } else if ($competitor_id == $competitor_id2) {
-                    $score = "X";
-                } else {
-                    $score = '';
+    /**
+     * Return the pair of 'you' or 'opp' and the id of the winner This assumes
+     * that the result is determined by the last game where the winner has
+     * reached the target score.
+     */
+    public static function getWinner($result) {
+        if (array_key_exists('target', $result)) {
+            foreach ([
+                'you',
+                'opp'
+            ] as $p) {
+                $pinfo = $result[$p];
+                $pid = $pinfo["person"];
+                $scores = $pinfo['scores'];
+                if ($scores[array_key_last($scores)] == $pinfo['target']) {
+                    return [
+                        $p,
+                        $pid
+                    ];
                 }
-                $html .= '<td>' . $score . '</td>';
             }
-            $html .= '<td>' . $competitor['wins'] . '</td>';
-            $html .= '<td>' . $competitor['net_hoops'] . '</td>';
-            $html .= '<td>' . $competitor['total_hoops'] . '</td>';
-            $html .= '</tr>';
+            return [
+                null,
+                null
+            ];
+        } else {
+            $youresult = $result['you']['scores'];
+            $oppresult = $result['opp']['scores'];
+            $winner = $youresult[array_key_last($youresult)] > $youresult[array_key_last($youresult)] ? 'you' : 'opp';
+            return [
+                $winner,
+                $result[$winner]['person']
+            ];
         }
-        $html .= '</table></div>';
-        return $html;
     }
 }
 

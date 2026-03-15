@@ -1,5 +1,10 @@
 <?php
 
+
+function dumpToFile($thing) {
+    file_put_contents('/var/www/html/wordpress/wp-content/uploads/d.log', "\n" . json_encode($thing) . "\n", FILE_APPEND | LOCK_EX);
+}
+
 /** 
  * Class holding a single match result
  */
@@ -123,6 +128,7 @@ class Store_Scores_Public {
             $bestof = get_post_meta($comp_id, 'bestof', true);   
             $competitors = get_post_meta($comp_id, 'competitors', true);
             $managers = get_post_meta($comp_id, 'managers', true);
+            $targetscores = get_post_meta($comp_id, 'targetscores', true);
             if ($managers) {
                 $tman = in_array($me->ID, $managers);
             } else {
@@ -190,16 +196,20 @@ class Store_Scores_Public {
         }
         $html .= '</select>';
         $html .= '<div>';
+        if ($targetscores) {
+            $html .= '<label for="you1"><br/>Please enter the target scores for each game with ' . $your . ' target first</label>';
+            $html .= '<input class="croquet" type="number" min="0" max="26" size="2" name="youtarget" id="youtarget">
+                     -<input class="croquet" type="number" min="0" max="26" size="2" name="opptarget" id="opptarget">';
+        }
         if ($bestof == 1) {
             $html .= '<label for="you1"><br/>Please enter the results of the match with ' . $your . ' result first</label>';
         } else {
-            $html .= '<label for="you1"><br/>Please enter the results in pairs for each game of the match. For each game ' . $your . ' results should appear first</label>';
+            $html .= '<label for="you1"><br/>Please enter the results in pairs for each game of the match. For each game ' 
+                . $your . ' results should appear first</label>';
         }
         for ($i = 1; $i <= $bestof; $i++) {
             if ($i != 1) $html .= ', ';
             $html .= '<input class="croquet" type="number" min="0" max="26" size="2" name="you' . $i. '" id="you' . $i. '" >-<input class="croquet" type="number" min="0" max="26" size="2" name="opp' . $i. '" id="opp' . $i. '" >';
-
-
         }  
         $html .= '</div>';
         $html .= '<input type="submit" name="send-scores" id="submit-' . $comp_id . '"  class="submit"/>';
@@ -265,16 +275,23 @@ class Store_Scores_Public {
         }
 
         $results = get_post_meta($comp_id, 'result');
+        $targetscores = get_post_meta($comp_id, 'targetscores', true);
+   
         foreach ($results as $result) {
+            if ($targetscores) {
+                $youtarget="/".$result['you']['target'];
+                $opptarget="/".$result['opp']['target'];
+            }
             if ($result['you']['person'] == $me->ID) {
-                $r = [$result['you'],$result['opp']];
+                $r = [$result['you'], $youtarget,$result['opp'], $opptarget];
             } else if ($result['opp']['person'] == $me->ID) {
-                $r = [$result['opp'],$result['you']];
+                $r = [$result['opp'], $opptarget,$result['you'], $youtarget];
             } else {
                 $r = null;
             }
+          
             if ($r) {
-                $presults[] = ['date' => $result['date'], 'person'=> $r[1]['person'], 'scores' => [$r[0]['scores'],$r[1]['scores']]];
+                $presults[] = ['date' => $result['date'], 'person'=> $r[2]['person'], 'scores' => [$r[0]['scores'],$r[1],$r[2]['scores'],$r[3]]];
             }
         } 
 
@@ -296,7 +313,8 @@ class Store_Scores_Public {
                 if ($i++ == $max) break;
                 $html .= '<tr><td>' . $presult['date'] . '</td><td>' . $this->getnameLabel($presult['person']) . '</td>';
                 foreach ($presult['scores'][0] as $n=>$v) {
-                    $html .= '<td>' .  $presult['scores'][0][$n] . '-' . $presult['scores'][1][$n] . '</td>';
+                    $html .= '<td>' . $presult['scores'][0][$n] . $presult['scores'][1] 
+                               .'-' . $presult['scores'][2][$n] . $presult['scores'][3] . '</td>';
                 }
                 $html .= '</tr>';
             }
@@ -315,6 +333,7 @@ class Store_Scores_Public {
         $fail = '';
         $comp_id = $_POST['comp_id'];
         $bestof = get_post_meta($comp_id, 'bestof', true); 
+        $targetscores = get_post_meta($comp_id, 'targetscores', true); 
         foreach ($_POST as $key => $value) {
             if (str_starts_with($key,'delete_')) {
                 $result = unserialize(str_replace("\'",'"',$value));
@@ -373,9 +392,15 @@ class Store_Scores_Public {
         } else {
             $url = add_query_arg('success', 1, $url);
             $result['date'] = $_POST['dateofmatch'];
-            $result['you'] = ['person' => $_POST['you_id'], 'scores' => $you];
-            $result['opp'] = ['person' => $_POST['opp_id'], 'scores' => $opp];
+            if($targetscores) {
+                $result['you'] = ['person' => $_POST['you_id'], 'target' => $_POST['youtarget'], 'scores' => $you];
+                $result['opp'] = ['person' => $_POST['opp_id'], 'target' => $_POST['opptarget'], 'scores' => $opp];
+            } else {
+                $result['you'] = ['person' => $_POST['you_id'], 'scores' => $you];
+                $result['opp'] = ['person' => $_POST['opp_id'], 'scores' => $opp];
+            }
             $result['timestamp'] = time();
+            echo $result['you'];
 
             $you = get_user_by('ID', $_POST['you_id']);
             $opp = get_user_by('ID', $_POST['opp_id']);
@@ -423,7 +448,7 @@ class Store_Scores_Public {
                 return "The id specified is not of a competition";
             }
         } else {
-            return 'Competion not specified in call to short code.';
+            return 'Competition not specified in call to short code.';
         }
         $type = get_post_meta($comp_id, 'type', true);
         if ($type == '') {

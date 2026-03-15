@@ -7,7 +7,7 @@
  */
 
 /** 
- * Class holding the competiton functions
+ * Class holding the competition functions
  */
 class Store_Scores_Competition {
 
@@ -75,6 +75,12 @@ class Store_Scores_Competition {
             'Best of',
             [$this,'competition_bestof_content'],
             'ss_competition', 'side', 'default');
+            
+        add_meta_box(
+            'competition_targetscores',
+            'Target scores',
+            [$this,'competition_targetscores_content'],
+            'ss_competition', 'side', 'default');
 
         add_meta_box(
             'competition_numresults',
@@ -134,7 +140,11 @@ class Store_Scores_Competition {
      * Invoked by add_competition to display competition id
      */
     public function competition_id_content($post) {
-        echo '<legend>Reference with shortcodes of [ss-get-description id=' . $post->ID . '], [ss-enter-score id=' . $post->ID . '] and [ss-show-results id=' . $post->ID . ']</legend>';
+        echo '<legend>Reference with shortcodes of [ss-get-description id=' . $post->ID . ']
+             , [ss-enter-score id=' . $post->ID . ']
+             , [ss-show-results id=' . $post->ID . ']
+           and [ss-list-scores id=' . $post->ID . ']
+           </legend>';
     }
 
 
@@ -173,19 +183,29 @@ class Store_Scores_Competition {
         }
         echo '</select>';
     }
+    
+    /**
+    * Invoked by add_competition to display selector for target scores
+    */
+    public function competition_targetscores_content ($post) {
+        $ts = get_post_meta($post->ID,'targetscores',true);
+        echo '<input type="checkbox" id="targetscores" name="targetscores" value="checked" ' . $ts . '>';
+    }
+    
 
     /**
-     * Invoked by add_competitition to display selector for number of their own results to display to competitors
+     * Invoked by add_competitition to display selector for number of their own
+     * results to display to competitors
      */
     public function competition_numresults_content ($post) {
         $nr = get_post_meta($post->ID,'numresults',true);
         if (! $nr) $nr = 5;
-        echo '<label for="numresults"></label>';
         echo '<input type="number" min="0" id="numresults" name="numresults" value="' . $nr . '" >';
     }
 
     /**
-     * Invoked by add_competitition to display selector for number of most recent recorded results to allow deletion
+     * Invoked by add_competitition to display selector for number of most 
+     * recent recorded results to allow deletion
      */
     public function competition_numtodelete_content ($post) {
         $nd = get_post_meta($post->ID,'numtodelete',true);
@@ -218,7 +238,8 @@ class Store_Scores_Competition {
     }
 
     /**
-     * Invoked by add_competition_boxes to display boxes to input manager names for a specific ss_competition.
+     * Invoked by add_competition_boxes to display boxes to input manager 
+     * names for a specific ss_competition.
      */
     public function manager_content( $post, $args ) {
         $x = $args['args'][0];
@@ -266,6 +287,7 @@ class Store_Scores_Competition {
 
         update_post_meta( $post_id, 'type', $_POST['type']);
         update_post_meta( $post_id, 'bestof', $_POST['bestof']);
+        update_post_meta( $post_id, 'targetscores',  $_POST['targetscores']);
         update_post_meta( $post_id, 'numresults', $_POST['numresults']);
         update_post_meta( $post_id, 'numtodelete', $_POST['numtodelete']);
         update_post_meta( $post_id, 'competitors', array_values(array_diff(array_unique($competitors),[0])));
