@@ -84,7 +84,7 @@ for value in contents:
 	draw[pos] = value
   
 print ("Draw")
-for i in range(len(draw)): print(i+1, ": ", draw[i])
+for i in range(len(draw)): print(i, ": ", draw[i])
 
 process = [None]*power
 fmt="0" + str(n) + "b"
@@ -93,5 +93,5 @@ for key in range(power) :
 	process[pkey] = draw[key]
 
 print ("Process")
-for i in range(len(process)): print(i+1, ": ", process[i])
+for i in range(len(process)): print(i, ": ", process[i])
 

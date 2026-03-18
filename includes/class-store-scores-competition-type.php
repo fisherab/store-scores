@@ -14,12 +14,11 @@ abstract class Store_Scores_Competition_Type {
     abstract public function get_results($comp_id);
 
     /**
-     * Return the pair of 'you' or 'opp' and the id of the winner This assumes
-     * that the result is determined by the last game where the winner has
-     * reached the target score.
+     * Return the pair of 'you' or 'opp' and the id of the winner 
      */
     public static function getWinner($result) {
-        if (array_key_exists('target', $result)) {
+        if (array_key_exists('target', $result['you'])) {
+            // The result is determined by the last game 
             foreach ([
                 'you',
                 'opp'
@@ -28,7 +27,7 @@ abstract class Store_Scores_Competition_Type {
                 $pid = $pinfo["person"];
                 $scores = $pinfo['scores'];
                 if ($scores[array_key_last($scores)] == $pinfo['target']) {
-                    return [
+                     return [
                         $p,
                         $pid
                     ];
@@ -41,7 +40,7 @@ abstract class Store_Scores_Competition_Type {
         } else {
             $youresult = $result['you']['scores'];
             $oppresult = $result['opp']['scores'];
-            $winner = $youresult[array_key_last($youresult)] > $youresult[array_key_last($youresult)] ? 'you' : 'opp';
+            $winner = $youresult[array_key_last($youresult)] > $oppresult[array_key_last($youresult)] ? 'you' : 'opp';
             return [
                 $winner,
                 $result[$winner]['person']

@@ -12,6 +12,7 @@ class Store_Scores_KO_Type extends Store_Scores_Competition_Type {
         if ($player_id == 0) {
             return get_post_meta($comp_id,'competitors', true);
         }
+
         $sheet = $this->get_sheet($comp_id);
         $rounds = count($sheet);
         for($i = 0; $i < count($sheet[0]); $i++) {
@@ -34,11 +35,18 @@ class Store_Scores_KO_Type extends Store_Scores_Competition_Type {
     }
 
     private function get_sheet($comp_id) {
+        // A sheet is an array of rounds
         $competitors = get_post_meta($comp_id,'competitors', true);
         $title = explode("byes:", get_the_title($comp_id));
-        if ($title[1]) $byeslist = explode(" ",$title[1]);
-        else $byeslist = [];
-        foreach ($byeslist as $value) $round[intval($value)] = "-";
+        if ($title[1]) {
+            $byeslist = preg_split("/\s+/",$title[1]);
+            foreach ($byeslist as $value) $round[intval($value)] = "-";
+        }
+        else {
+            $byeslist = [];
+            $round = [];
+        }
+        
         $insert = 0;
         foreach ($competitors as $value) {
             while (array_key_exists($insert,$round)) $insert++;
@@ -63,13 +71,10 @@ class Store_Scores_KO_Type extends Store_Scores_Competition_Type {
                                 $result = unserialize($result);
                                 $you = $result['you'];
                                 $you_id = $you['person'];
-                                $you_scores = $you['scores'];
-                                $you_score = $you_scores[count($you_scores)];
                                 $opp = $result['opp'];
-                                $opp_id = $opp['person'];
-                                $opp_scores = $opp['scores'];
-                                $opp_score = $opp_scores[count($opp_scores)];
-                                $youwin = $you_score > $opp_score;
+                                $opp_id = $opp['person'];                              
+                                $youwin = Store_Scores_Competition_Type::getWinner($result)[0] == 'you';
+                                
                                 if ($lastround[$i*2] == $you_id && $lastround[$i*2+1] == $opp_id) {
                                     if ($youwin) $round[$i] = $you_id;
                                     else $round[$i] = $opp_id;

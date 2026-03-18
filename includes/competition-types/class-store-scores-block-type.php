@@ -56,7 +56,6 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
      * Return formatted results $comp_id id of the competition custom post
      */
     public function get_results($comp_id) {
-        dumpToFile('Start at ' . date('Y-m-d h:i:s'));
         $results = get_post_meta($comp_id, 'result');
         if (! $results) {
             return "No matches completed yet";
@@ -68,7 +67,6 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
             $opp_id = $result['opp']['person'];
             $records[$you_id][] = $result;
             $records[$opp_id][] = $result;
-            dumpToFile($result);
         }
 
         $competitors = array_diff(get_post_meta($comp_id, 'competitors', true), [
@@ -89,11 +87,6 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
         }
 
         foreach ($records as $competitor_id => $record) {
-            dumpToFile([
-                "competitor_id, record",
-                $competitor_id,
-                $record
-            ]);
             $wins = 0;
             $net_hoops = 0;
             $total_hoops = 0;
@@ -101,10 +94,6 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
             $targets = [];
             foreach ($record as $result) {
                 $winner = Store_Scores_Competition_Type::getWinner($result);
-                dumpToFile([
-                    "Winner",
-                    $winner
-                ]);
                 $you = $result['you'];
                 $you_id = $you['person'];
                 $opp = $result['opp'];
@@ -145,13 +134,7 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
                     $targets[$you_id] = $ord_targets;
                 }
             }
-            dumpToFile([
-                "competitor_id,scores, targets",
-                $competitor_id,
-                $scores,
-                $targets
-            ]);
-
+ 
             $table[$competitor_id]['scores'] = $scores;
             $table[$competitor_id]['targets'] = $targets;
             $table[$competitor_id]['wins'] = $wins;
@@ -198,7 +181,6 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
         foreach ($ranking as $slot) {
             $competitor_id = $slot[0];
             $competitor = $table[$competitor_id];
-            dumpToFile($competitor);
             $html .= '<th>' . $competitor['initials'] . '</th>';
         }
         $html .= '<th>W</th>';
@@ -206,10 +188,6 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
         $html .= '<th>TH</th>';
         $html .= '</tr>';
 
-        dumpToFile([
-            'ranking',
-            $ranking
-        ]);
         // Compute score display
         foreach ($ranking as $slot) {
             $competitor_id = $slot[0];
@@ -220,22 +198,12 @@ class Store_Scores_Block_Type extends Store_Scores_Competition_Type {
             $html .= '<td>' . $pos . '</td>';
             $scores = $table[$competitor_id]['scores'];
             $targets = $table[$competitor_id]['targets'];
-            dumpToFile([
-                "comp id, scores, targets",
-                $competitor_id,
-                $scores,
-                "  ",
-                $targets
-            ]);
+    
             foreach ($ranking as $slot2) {
                 $competitor_id2 = $slot2[0];
                 if (isset($scores[$competitor_id2])) {
                     $match = $scores[$competitor_id2];
                     $targetpair = $targets[$competitor_id2];
-                    dumpToFile([
-                        $match,
-                        $targetpair
-                    ]);
                     $n = count($match[0]);
                     $score = "";
                     for ($j = 1; $j <= $n; $j ++) {
