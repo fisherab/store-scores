@@ -205,6 +205,7 @@ class Store_Scores_Public {
         }
         $html .= '<select id="opp" name="opp_id">';
 
+        dumpToFile($opponents);
         foreach ($opponents as $opponent) {
             $user = get_user_by('ID', $opponent);
             $name = $user->get('first_name') . ' ' . $user->get('last_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');
@@ -315,6 +316,9 @@ class Store_Scores_Public {
             if ($targetscores) {
                 $youtarget = "/" . $result['you']['target'];
                 $opptarget = "/" . $result['opp']['target'];
+            } else {
+                $youtarget = Null;
+                $opptarget = Null;
             }
             if ($result['you']['person'] == $me->ID) {
                 $r = [
