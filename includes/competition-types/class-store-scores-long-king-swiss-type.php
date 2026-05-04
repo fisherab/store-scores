@@ -31,7 +31,7 @@ class Store_Scores_Long_King_Swiss_Type extends Store_Scores_Competition_Type {
         } else {
             $oppolist = [];
         }
-        dumpToFile(['oppolist',$oppolist]);   
+        // dumpToFile(['oppolist',$oppolist]);   
       
         // Go through the gameslist and only keep those unplayed
         $played = [];
@@ -45,7 +45,6 @@ class Store_Scores_Long_King_Swiss_Type extends Store_Scores_Competition_Type {
            	    // dumpToFile(['results',$result,$you_id,$opp_id]);   
          	    if ($player_id == $you_id) $played[] = $opp_id;
                 if ($player_id == $opp_id) $played[] = $you_id;   
-                // dumpToFile(['played',$played]);    
             }            
         } 
         // dumpToFile(['diff',array_diff($oppolist, $played)]);    
