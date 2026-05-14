@@ -4,186 +4,112 @@ import json, argparse, random, itertools
 
 parser = argparse.ArgumentParser(description = "Derives the rounds for a long king swiss")
 parser.add_argument('file', nargs=1, help = "file to use")
-parser.add_argument('--noshuffling', '-n', action="store_true", help = "remove the random behaviour")
-parser.add_argument("--verbose", "-v", nargs = 1, help = "string to control output:p(layers), i(llegal swaps), s(waps)")
-parser.add_argument('--rounds','-r', default = 4, type = int, help = "Number of rounds (4)")
-parser.add_argument('--tries', '-t', default = 40, type = int, help ="Number of tries to find minimum (40)")
-parser.add_argument('--iterations','-i',default = 40, type = int, help = "Number of iterations sithin a try (40)")
+parser.add_argument('--games','-g', default = 4, type = int, help = "Number of games per person (4)")
+parser.add_argument('--tries', '-t', default = 10000, type = int, help ="Number of tries to find minimum (100000)")
 args = parser.parse_args()
-shuffle = not args.noshuffling
-verbosity = args.verbose[0]
-verbosePlayers = verbosity and 'p' in verbosity
-verboseIllegal = verbosity and'i' in verbosity
-verboseSwaps = verbosity and's' in verbosity
 
-rounds = args.rounds
-
+gamesPerPerson = args.games
 
 # Run the whole process
-try:
-    best = None
-    for run in range(args.tries):
-        
-        # Distribute the players to give everyone the same number of games
+best = None
+for run in range(args.tries):
+
+    """
+    Basic algorithm
+
+    Consider all possible games - i.e each player could plays
+    everybody with lexically higher name. There are (n-1)! - so not
+    many.
+
+    There are no rounds - just a flat list of games to find.
+
+    Each person needs to play m (probably 4) games so a total of m*n/2
+    games
+
+    Choose a game at random
+
+    Compute quality metric
+
+    Repeat to get the best quaility metric
+    """
+
+    # Do initial game allocation - restart if it gets stuck
+    while True:
         with open(args.file[0], "r") as jsonfile: 
             players = json.load(jsonfile)
-        size = len(players)
-            
-        while(True):
-            games = {}
-            for player in players: games[player['name']] = 0
-
-            if shuffle: random.shuffle(players)
-            for player in players:
-                randomPlayers = players[:]
-                randomPlayers.remove(player)
-                if shuffle:random.shuffle(randomPlayers)
-                player['opp'] = []
-                for p in randomPlayers:
-                    pName = p['name']
-                    if len(player['opp']) >= rounds: break
-                    if games[pName] < rounds:
-                        player['opp'].append(pName)
-                        games[pName] += 1
-                        
-            ok = True
-            for player in players:
-                if games[player['name']] != rounds:
-                    ok = False
-                    break;
-            if ok: break
-
-        # Put players into dictionary
-        names = set()
-        playerD = {}
+        playerDict = {}
         for player in players:
-            pName = player['name']
-            names.add(pName)
-            playerD[pName] = player
-            del player['name']
-        if len(names) != size: raise RuntimeError("JSON data file has duplicate names.")
+            playerDict[player['name']] = player
+            player['opps'] = set()
+            games = set()
+            fullyScheduledPlayerNames = set()
+            for player1 in players:
+                for player2 in players:
+                    if player1['name'] < player2['name']:
+                        games.add((player1['name'],player2['name']))
 
-        # Add the array of idsx and the sumidx for each player
-          
-        for pName, player in playerD.items():
-            idxs = []
-            sumidx = 0
-            for p in player['opp']:
-                idx = playerD[p]['idx']
-                idxs.append(idx)
-                sumidx += idx
-            player['idxs'] = idxs
-            player['sumidx'] = sumidx
-
-        # Now start swapping to make inprovements
-
-        # First find highest and lowest
-        for iter in range(args.iterations):
-            if verbosePlayers:
-                for pName, player in playerD.items():
-                    print(pName, player)
+        while len(fullyScheduledPlayerNames) != len(players):
+            if len(games) == 0: break
+            game = random.choice(list(games))
+            games.remove(game)
+            pName1, pName2 = game
+            if pName1 in fullyScheduledPlayerNames or  pName2 in fullyScheduledPlayerNames:
+                continue
+            player1 = playerDict[pName1]
+            player2 = playerDict[pName2]
+            player1['opps'].add(pName2)
+            player2['opps'].add(pName1)
             
-            high = None
-            averageSumidx = 0
-            for pName, player in playerD.items():
-                averageSumidx += player['sumidx']
-                if high == None:
-                    high = pName
-                    low = pName
-                elif player['sumidx'] > playerD[high]['sumidx']:
-                    high = pName
-                elif player['sumidx'] < playerD[low]['sumidx']:
-                    low = pName
-            averageSumidx = averageSumidx/size
-            if verbosePlayers: print ("averageSumidx:", averageSumidx, ", low and high:", low, high)
+            for player in (player1, player2):
+                if len(player['opps']) == gamesPerPerson:
+                    fullyScheduledPlayerNames.add(player['name'])   
 
-            # for those which can be swopped work out the effect
-            mind2 =  None
-            for lowerIndex in range(rounds):
-                lowerEle = playerD[low]['opp'][lowerIndex]
-                for higherIndex in range(rounds):
-                    higherEle = playerD[high]['opp'][higherIndex]
-                    if verboseIllegal: print ("Consider indices", lowerIndex, higherIndex)
-                    if lowerEle == higherEle:
-                        if verboseIllegal: print ("Same contents", lowerEle, higherEle)
-                    elif low == higherEle:
-                        if verboseIllegal: print ("low", low, "higherEle", higherEle)
-                    elif high == lowerEle:
-                        if verboseIllegal: print("high", high, "lowerEle", lowerEle)
-                    elif lowerEle in playerD[high]['opp']:
-                        if verboseIllegal: print("lowerEle", lowerEle, "in", playerD[high]['opp'], "so can't swap",  lowerEle, "at", low, "with", higherEle, "at",  high)
-                    elif higherEle in playerD[low]['opp']:
-                        if verboseIllegal: print("higherEle", higherEle, "in", playerD[low]['opp'], "so can't swap",  lowerEle, "at", low, "with", higherEle, "at",  high)
-                    else:
-                        sumidxLow = playerD[low]["sumidx"] - playerD[lowerEle]['idx'] + playerD[higherEle]['idx']
-                        sumidxHigh = playerD[high]["sumidx"] - playerD[higherEle]['idx'] + playerD[lowerEle]['idx']
-                        d2 = (sumidxLow - averageSumidx) ** 2 + (sumidxHigh - averageSumidx) **2
-                        if mind2 == None or d2 < mind2:
-                            mind2 = d2
-                            eles = (lowerIndex, low, higherIndex, high)
-                            if verboseSwaps: print(d2,sumidxLow,sumidxHigh)
-            lowerIndex, low, higherIndex, high = eles
-            if verboseSwaps: print("For mind2 of", mind2, "swap", lowerIndex, "at", low, "with", higherIndex, "at",  high, "lowerops, higherops are:",playerD[low]['opp'] ,playerD[high]['opp'])
-            pLow = playerD[low]
-            pHigh = playerD[high]
+        if len(fullyScheduledPlayerNames) == len(players): break
+        
+#   Check for uniqueness
+    for player in players:
+        for opp in player['opps']:
+            assert player['name'] in playerDict[opp]['opps']
 
-            if verboseSwaps: print("pLow", pLow, "pHigh", pHigh,  pLow['opp'][lowerIndex],  pHigh['opp'][higherIndex] )
-            newLow = pHigh['opp'][higherIndex]
-            newHigh = pLow['opp'][lowerIndex]
+#   Add sumidx for each player
+    sumidx2 = 0
+    for player in players:
+        sumidx = 0
+        for p in player['opps']:
+            sumidx += playerDict[p]['idx']
+        player['sumidx'] = sumidx
+        sumidx2 += sumidx**2
+ #   print ("Run", run, "Sumidx2", sumidx2)
 
-            pLow['opp'][lowerIndex] = newLow
-            pHigh['opp'][higherIndex] = newHigh
+    if not best or sumidx2 < best:
+        best = sumidx2
+        bestGames = players[:]
 
-            newidxLow = pHigh['idxs'][higherIndex]
-            newidxHigh = pLow['idxs'][lowerIndex]
+print("Best", best)
+for player in bestGames: print (player)
 
-            pLow['idxs'][lowerIndex] = newidxLow
-            pHigh['idxs'][higherIndex] = newidxHigh
+# Name to numbers
+with open(args.file[0], "r") as jsonfile: 
+    players = json.load(jsonfile)
+numbers = {}
+names = {}
+i = 0
+for p in players:
+    names[i] = p['name']
+    numbers[p['name']] = i
+    i += 1
 
-            lowsumidx = 0
-            highsumidx = 0
-            for index in range(rounds):
-                lowsumidx += pLow['idxs'][index]
-                highsumidx += pHigh['idxs'][index]
-            pLow['sumidx'] = lowsumidx/rounds
-            pHigh['sumidx'] = highsumidx/rounds
-            
-        for pName, player in playerD.items():
-            print(pName, player)
-
-        sumidx2 = 0
-        for player in players:
-            sumidx2 += player['sumidx']**2
-        print ("sumidx2:", sumidx2)
-
-        if not best or sumidx2 < best:
-            best = sumidx2
-            bestGames = dict(playerD)
-
-    print(best)
-    with open(args.file[0], "r") as jsonfile: 
-        players = json.load(jsonfile)
-    numbers = {}
-    names = {}
-    i = 0
-    for p in players:
-        names[i] = p['name']
-        numbers[p['name']] = i
-        i += 1
-
-    print ("games=", end="")
-    for pname, player in bestGames.items():
-        left = numbers[pname]
-        opp = player['opp']
-        for i in range(rounds):
-            right = numbers[opp[i]]
+print ("games=", end="")
+for player in bestGames:
+    left = numbers[player['name']]
+    opp = sorted(list(player['opps']))
+    for i in range(gamesPerPerson):
+        right = numbers[opp[i]]
+        if left < right:
             print(left, right, end = " ")
-    print()
-    print("Rounds:", rounds, " tries:", args.tries, " iterations:", args.iterations)
-except RuntimeError as error:
-    print("A run time error occured:", error)
-            
- 
+print()
+print("Games each", gamesPerPerson, " tries:", args.tries)
+
         
 
     

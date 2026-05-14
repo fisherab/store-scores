@@ -1,0 +1,17 @@
+[
+  { "name": "Joe King", "idx": 50 },
+  { "name": "Peter Allan", "idx": 35 },
+  { "name": "Avril Rangoni-Machiavelli", "idx": 30 },
+  { "name": "Andy Evason", "idx": 13 },
+  { "name": "Andrew Petit", "idx": -5 },
+  { "name": "Nigel Cox", "idx": -10 },
+  { "name": "Brian Jamieson", "idx": -30 },
+  { "name": "Andy Robertson", "idx": -40 },
+  { "name": "Steve Fisher", "idx": -40 },
+  { "name": "David Long", "idx": -40 },
+  { "name":"Edmund Shirley", "idx": 0 },
+  { "name":"John Harrison", "idx": 0 },
+  { "name": "Annie the Aardvark", "idx": -40},
+  { "name":"Deirdre Cochrane", "idx": 0 },
+  { "name":"Paul Wolff", "idx": 0 }
+]
