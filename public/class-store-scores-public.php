@@ -1,7 +1,7 @@
 <?php
 
 function dumpToFile($thing) {
-    file_put_contents('/var/www/html/wordpress/wp-content/uploads/d.log', "\n" . json_encode($thing) . "\n", FILE_APPEND | LOCK_EX);
+    file_put_contents('/home/croquetw/public_html/wp-content/uploads/d.log', "\n" . json_encode($thing) . "\n", FILE_APPEND | LOCK_EX);
 }
 
 /**
@@ -205,7 +205,6 @@ class Store_Scores_Public {
         }
         $html .= '<select id="opp" name="opp_id">';
 
-        dumpToFile($opponents);
         foreach ($opponents as $opponent) {
             $user = get_user_by('ID', $opponent);
             $name = $user->get('first_name') . ' ' . $user->get('last_name') . esc_html(' <') . $user->get('user_email') . esc_html('>');

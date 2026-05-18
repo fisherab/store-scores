@@ -9,8 +9,9 @@ class Store_Scores_Long_King_Swiss_Type extends Store_Scores_Competition_Type {
      * Need to return the set of people you have to play
      */
     public function get_opponents($comp_id, $player_id) {
+        $competitors = get_post_meta($comp_id,'competitors', true);
         if ($player_id == 0) {
-            return  get_post_meta($comp_id,'competitors', true);
+            return  $competitors;
         }
     
         // Create gameslist with all games with $player_id
@@ -19,7 +20,8 @@ class Store_Scores_Long_King_Swiss_Type extends Store_Scores_Competition_Type {
         if ($title[1]) {
             $list = preg_split("/\s+/",$title[1]);
             while ($v1 = array_pop($list)) {
-                $v2 = array_pop($list);
+                $v1 = $competitors[$v1];
+                $v2 = $competitors[array_pop($list)];
                 if (in_array($player_id, [$v1,$v2])) {
                     if ($v1 == $player_id) {
                         $oppolist[] = $v2;
