@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import json, argparse, random, itertools
+import json, argparse, random, itertools, math
 
 parser = argparse.ArgumentParser(description = "Derives the rounds for a long king swiss")
 parser.add_argument('file', nargs=1, help = "file to use")
@@ -32,6 +32,14 @@ for run in range(args.tries):
 
     Repeat to get the best quaility metric
     """
+    
+    # Compute meanIdX
+    with open(args.file[0], "r") as jsonfile: 
+        players = json.load(jsonfile)
+        meanIdx = 0
+        for player in players:
+            meanIdx += player['idx']
+        meanIdx = round(meanIdx / len(players))
 
     # Do initial game allocation - restart if it gets stuck
     while True:
@@ -76,9 +84,10 @@ for run in range(args.tries):
     for player in players:
         sumidx = 0
         for p in player['opps']:
-            sumidx += playerDict[p]['idx']
+            sumidx += (playerDict[p]['idx'] - meanIdx)
         player['sumidx'] = sumidx
         sumidx2 += sumidx**2
+    sumidx2 = math.sqrt(sumidx2/len(players)) 
  #   print ("Run", run, "Sumidx2", sumidx2)
 
     if not best or sumidx2 < best:
@@ -108,7 +117,7 @@ for player in bestGames:
         if left < right:
             print(left, right, end = " ")
 print()
-print("Games each", gamesPerPerson, " tries:", args.tries)
+print("Games each", gamesPerPerson, " tries:", args.tries, "meanIdx", meanIdx)
 
         
 
