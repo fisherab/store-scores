@@ -68,6 +68,7 @@ class Store_Scores_Long_King_Swiss_Type extends Store_Scores_Competition_Type {
         $html .= '<p>All your games are predefined in a way that should give all competitors roughly the same strength opposing them.</p>';
         $html .= '<p>You need to win a number of games to enter the knockout stage.</p>';
         $html .= '<p>Note that you do not play everybody, but that everybody has the same number of opponents</p>';
+        $html .= '<p>You can play your preselected opponents in any order you wish. After you enter the score your opponents will disappear from your list of people to play.</p>';
         $html .= '</div>';
         return $html;
     }
